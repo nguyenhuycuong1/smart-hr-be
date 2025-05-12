@@ -1,0 +1,45 @@
+
+spring:
+  profiles:
+    active: dev
+  application:
+    name: SmartHR
+  datasource:
+    url: "jdbc:postgresql://localhost:5430/smart_hr_multitenant"
+    username: postgres
+    password: 123123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  security:
+    oauth2:
+      resource-server:
+        jwt:
+          issuer-uri: http://localhost:8081/realms/smart_hr
+      client:
+        registration:
+          oidc:
+            client-id: smart_hr
+keycloak:
+  auth-server-url: http://localhost:8081
+  realm: master
+  resource: admin-cli
+  credentials:
+    username: admin
+    password: 'admin'
+  app:
+    realm: smart_hr
+
+
+server:
+  port: 8080
+  servlet:
+    context-path: '/smart-hr'
+
+
+
+
+
