@@ -47,6 +47,9 @@ public class EmployeeService extends SearchService<Employee>{
     @Autowired
     private SettingSystemRepository settingSystemRepository;
 
+    @Autowired
+    private ContractService contractService;
+
 
     public EmployeeService(EmployeeRepository employeeRepository) {
         super(employeeRepository);
@@ -160,7 +163,7 @@ public class EmployeeService extends SearchService<Employee>{
         }
         Contract contractActive = contractRepository.findByEmployeeCodeAndStatus(employee.getEmployeeCode(), "Đang hoạt động");
         if(contractActive != null) {
-            dto.setContractActive(contractActive);
+            dto.setContractActive(contractService.convertToMap(contractActive));
         }
 
         return dto;
@@ -171,7 +174,9 @@ public class EmployeeService extends SearchService<Employee>{
         if(employee == null) {
             throw new AppException(ErrorCode.NOT_EXISTS, "Employee does not exist");
         }
-        List<Contract> contracts = contractRepository.findAllByEmployeeCode(employeeCode);
+        List<Map<String, Object>> contracts = contractRepository.findAllByEmployeeCode(employeeCode).stream().map(contract -> {
+            return contractService.convertToMap(contract);
+        }).collect(Collectors.toList());
         BankInfo bankInfo = bankInfoRepository.findByEmployeeCode(employeeCode);
         Map<String, Object> result = new HashMap<>();
         result.put("employee", employee);
@@ -251,12 +256,14 @@ public class EmployeeService extends SearchService<Employee>{
 
     public Employee createEmployeeAndBankInfo(EmployeeDTO employeeDTO, BankInfoDTO bankInfoDTO) {
         Employee employee = this.createEmployee(employeeDTO);
-        BankInfo bankInfo = new BankInfo();
-        bankInfo.setBankCode(bankInfoDTO.getBankCode());
-        bankInfo.setBankName(bankInfoDTO.getBankName());
-        bankInfo.setEmployeeCode(employee.getEmployeeCode());
-        bankInfo.setBankNumber(bankInfoDTO.getBankNumber());
-        bankInfoRepository.save(bankInfo);
+        if(bankInfoDTO.getBankCode() != null && !bankInfoDTO.getBankCode().isEmpty()) {
+            BankInfo bankInfo = new BankInfo();
+            bankInfo.setBankCode(bankInfoDTO.getBankCode());
+            bankInfo.setBankName(bankInfoDTO.getBankName());
+            bankInfo.setEmployeeCode(employee.getEmployeeCode());
+            bankInfo.setBankNumber(bankInfoDTO.getBankNumber());
+            bankInfoRepository.save(bankInfo);
+        }
         return employee;
     }
 }

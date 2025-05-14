@@ -50,8 +50,12 @@ public class ContractDTO {
     @Column(nullable = false, name = "job_position")
     String jobPosition;
 
-    @Column(nullable = false, name = "shift")
+    @Column(name = "shift")
     String shift;
+
+    @Column(nullable = false, name = "work_schedule_id")
+    @JsonProperty("work_schedule_id")
+    Integer workScheduleId;
 
     @JsonProperty("type_of_work")
     @Column(nullable = false, name = "type_of_work")

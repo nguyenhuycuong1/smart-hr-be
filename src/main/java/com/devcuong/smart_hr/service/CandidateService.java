@@ -147,11 +147,9 @@ public class CandidateService extends SearchService<Candidate>{
     @Transactional
     public void handleSuccessfulCandidate(Candidate candidate) {
         Long count = candidateRepository.countByJobPostCodeAndStatus(candidate.getJobPostCode(), CandidateStatus.TRUNGTUYEN);
-        log.info("ĐẾM SỐ LƯỢNG TRÚNG TUYỂN {}", count);
         Map<String, Object> jobPost = jobPostService.getJobPostByJobPostCode(candidate.getJobPostCode());
         RecruitmentRequest recruitmentRequest = (RecruitmentRequest) jobPost.get("recruitment_request");
         Integer quantity = recruitmentRequest.getQuantity();
-        log.info("SỐ LƯƠNG {}", quantity);
         if(count >= quantity) {
             jobPostService.updateIsOpenJobPost(candidate.getJobPostCode(), false);
             List<PipelineStage> pipelineStages = stageRepository.findByJobPostCode(candidate.getJobPostCode());
@@ -181,5 +179,7 @@ public class CandidateService extends SearchService<Candidate>{
             }
         });
     }
+
+
 
 }

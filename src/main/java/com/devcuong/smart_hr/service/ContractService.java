@@ -2,6 +2,7 @@ package com.devcuong.smart_hr.service;
 
 import com.devcuong.smart_hr.Entity.Contract;
 import com.devcuong.smart_hr.Entity.Employee;
+import com.devcuong.smart_hr.Entity.WorkSchedule;
 import com.devcuong.smart_hr.dto.ContractDTO;
 import com.devcuong.smart_hr.dto.EmployeeDTO;
 import com.devcuong.smart_hr.dto.EmployeeRecordDTO;
@@ -9,6 +10,8 @@ import com.devcuong.smart_hr.dto.request.PageFilterInput;
 import com.devcuong.smart_hr.exception.AppException;
 import com.devcuong.smart_hr.exception.ErrorCode;
 import com.devcuong.smart_hr.repository.ContractRepository;
+import com.devcuong.smart_hr.repository.EmployeeRepository;
+import com.devcuong.smart_hr.repository.WorkScheduleRepository;
 import com.devcuong.smart_hr.utils.CodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +21,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,18 +34,21 @@ public class ContractService extends SearchService<Contract> {
     ContractRepository repository;
 
     @Autowired
-    EmployeeService employeeService;
+    EmployeeRepository employeeRepository;
+
+    @Autowired
+    WorkScheduleRepository workScheduleRepository;
 
     public ContractService(ContractRepository repository) {
         super(repository);
     }
 
-    public Page<Contract> getAllContracts(PageFilterInput<Contract> input) {
+    public Page<Map<String, Object>> getAllContracts(PageFilterInput<Contract> input) {
         try {
             // Sử dụng SearchService để tìm kiếm và phân trang
             Page<Contract> contractPage = super.findAll(input);
 
-            List<Contract> contracts = new ArrayList<>(contractPage.getContent());
+            List<Map<String, Object>> contracts = new ArrayList<>(contractPage.getContent()).stream().map(this::convertToMap).collect(Collectors.toList());
 
             return new PageImpl<>(contracts, contractPage.getPageable(), contractPage.getTotalElements());
         } catch (Exception e) {
@@ -48,6 +56,33 @@ public class ContractService extends SearchService<Contract> {
             // Xử lý ngoại lệ và ném ra một AppException
             throw new AppException(ErrorCode.UNCATEGORIZED, "Failed to retrieve contracts: " + e.getMessage());
         }
+    }
+
+    public Map<String, Object> convertToMap(Contract contract) {
+        Map<String, Object> contractMap = new HashMap<>();
+        contractMap.put("contract_code", contract.getContractCode());
+        contractMap.put("contract_name", contract.getContractName());
+        contractMap.put("employee_code", contract.getEmployeeCode());
+        contractMap.put("start_date", contract.getStartDate());
+        contractMap.put("end_date", contract.getEndDate());
+        contractMap.put("contract_type", contract.getContractType());
+        contractMap.put("basic_salary", contract.getBasicSalary());
+        contractMap.put("job_position", contract.getJobPosition());
+        contractMap.put("pay_frequency", contract.getPayFrequency());
+        contractMap.put("shift", contract.getShift());
+        contractMap.put("work_schedule_id", contract.getWorkScheduleId());
+        contractMap.put("type_of_work", contract.getTypeOfWork());
+        contractMap.put("status", contract.getStatus());
+        contractMap.put("note", contract.getNote());
+
+        // Lấy thông tin ca làm việc từ work schedule id
+        if (contract.getWorkScheduleId() != null) {
+            WorkSchedule workSchedule = workScheduleRepository.findById(contract.getWorkScheduleId())
+                    .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED, "Work schedule not found"));
+            contractMap.put("work_schedule", workSchedule);
+        }
+
+        return contractMap;
     }
 
     public Contract createContract(ContractDTO contractDto) {
@@ -62,6 +97,7 @@ public class ContractService extends SearchService<Contract> {
         contract.setJobPosition(contractDto.getJobPosition());
         contract.setPayFrequency(contractDto.getPayFrequency());
         contract.setShift(contractDto.getShift());
+        contract.setWorkScheduleId(contractDto.getWorkScheduleId());
         contract.setTypeOfWork(contractDto.getTypeOfWork());
         contract.setStatus(contractDto.getStatus());
         contract.setNote(contractDto.getNote());
@@ -94,6 +130,7 @@ public class ContractService extends SearchService<Contract> {
         contract.setJobPosition(contractDto.getJobPosition());
         contract.setPayFrequency(contractDto.getPayFrequency());
         contract.setShift(contractDto.getShift());
+        contract.setWorkScheduleId(contractDto.getWorkScheduleId());
         contract.setTypeOfWork(contractDto.getTypeOfWork());
         contract.setStatus(contractDto.getStatus());
         contract.setNote(contractDto.getNote());
@@ -138,12 +175,11 @@ public class ContractService extends SearchService<Contract> {
     }
 
     private void updateWorkInfo(Contract contract, String employeeCode) {
-        Employee employee = employeeService.getEmployeeByEmployeeCode(employeeCode);
+        Employee employee = employeeRepository.findByEmployeeCode(employeeCode);
         if("Đang hoạt động".equals(contract.getStatus())) {
             employee.setEmployeeType(contract.getContractType());
             employee.setJobCode(contract.getJobPosition());
-            EmployeeDTO employeeDTO = EmployeeDTO.toDTO(employee);
-            employeeService.updateEmployee(employeeDTO);
+            employeeRepository.save(employee);
         }
 
     }

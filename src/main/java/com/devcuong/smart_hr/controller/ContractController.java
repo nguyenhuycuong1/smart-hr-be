@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/contracts")
 public class ContractController {
@@ -19,7 +21,7 @@ public class ContractController {
 
     @PostMapping("/search")
     public PageResponse getAllContracts(@RequestBody PageFilterInput<Contract> input) {
-        Page<Contract> listContracts = contractService.getAllContracts(input);
+        Page<Map<String, Object>> listContracts = contractService.getAllContracts(input);
         return PageResponse.builder().data(listContracts.getContent()).dataCount(listContracts.getTotalElements()).build().success();
     }
 
