@@ -21,4 +21,14 @@ public class SettingSystemController {
     public ApiResponse updateSettingSystem(@RequestBody SettingSystemDTO settingSystemDTO) {
         return ApiResponse.builder().data(settingSystemService.saveSettingSystem(settingSystemDTO)).build().success();
     }
+
+    @PutMapping("/update-weekday")
+    public ApiResponse updateWeekDay(@RequestBody SettingSystemDTO settingSystemDTO) {
+        return ApiResponse.builder().data(settingSystemService.saveWeekday(settingSystemDTO)).build().success();
+    }
+
+    @PutMapping("/update-threshold")
+    public ApiResponse updateThreshold(@RequestBody SettingSystemDTO settingSystemDTO) {
+        return ApiResponse.builder().data(settingSystemService.saveThreshold(settingSystemDTO)).build().success();
+    }
 }
