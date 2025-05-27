@@ -199,5 +199,15 @@ public class ContractService extends SearchService<Contract> {
         updateExpiredContracts();
     }
 
+    public Contract findActiveContractByEmployeeCode(String employeeCode) {
+        return repository.findFirstByEmployeeCodeAndIsActiveOrderByStartDateDesc(employeeCode).orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED, "No active contract found for employee"));
+
+    }
+
+    public List<String> getAllActiveEmployeeCodes() {
+        return repository.findAllContractIsActive().stream()
+                .map(Contract::getEmployeeCode)
+                .collect(Collectors.toList());
+    }
 
 }

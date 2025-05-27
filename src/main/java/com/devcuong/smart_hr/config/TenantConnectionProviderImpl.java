@@ -30,8 +30,10 @@ public class TenantConnectionProviderImpl implements MultiTenantConnectionProvid
     @Override
     public Connection getConnection(String tenantIdentifier) throws SQLException {
         Connection connection = getAnyConnection();
-        log.info(tenantIdentifier);
-        connection.setSchema(null==tenantIdentifier ? DEFAULT_SCHEMA : tenantIdentifier);
+        // If tenant is null or empty, use the default schema
+        String schema = (tenantIdentifier == null || tenantIdentifier.isEmpty()) ? DEFAULT_SCHEMA : tenantIdentifier;
+        log.info("Using schema: {}", schema);
+        connection.setSchema(schema);
         return connection;
     }
 

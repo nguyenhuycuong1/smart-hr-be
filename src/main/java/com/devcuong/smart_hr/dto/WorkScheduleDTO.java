@@ -1,6 +1,7 @@
 package com.devcuong.smart_hr.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.Column;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -33,6 +34,9 @@ public class WorkScheduleDTO {
 
     @JsonProperty("break_end")
     LocalTime breakEnd;
+
+    @JsonProperty("total_work_hours")
+    Double totalWorkHours;
 
     @JsonProperty("created_at")
     LocalDate createdAt;

@@ -39,7 +39,9 @@ server:
   servlet:
     context-path: '/smart-hr'
 
-
+multitenancy:
+  tenants:
+    - devvn
 
 
 

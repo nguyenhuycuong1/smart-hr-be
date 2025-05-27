@@ -47,6 +47,10 @@ public class WorkSchedule {
     @Column(name = "break_end")
     LocalTime breakEnd;
 
+    @JsonProperty("total_work_hours")
+    @Column(name = "total_work_hours")
+    Double totalWorkHours;
+
     @JsonProperty("created_at")
     @Column(name = "created_at")
     LocalDate createdAt;

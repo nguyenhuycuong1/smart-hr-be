@@ -7,6 +7,7 @@ import com.devcuong.smart_hr.exception.AppException;
 import com.devcuong.smart_hr.exception.ErrorCode;
 import com.devcuong.smart_hr.repository.WorkScheduleRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.jdbc.Work;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -42,6 +43,11 @@ public class WorkScheduleService extends SearchService<WorkSchedule> {
         return repository.findAll();
     }
 
+    public WorkSchedule getWorkScheduleById(Integer id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED, "Work schedule not found"));
+    }
+
     public WorkSchedule createWorkSchedule(WorkScheduleDTO scheduleDTO) {
         WorkSchedule schedule = new WorkSchedule();
         updateScheduleFromDTO(schedule, scheduleDTO);
@@ -71,5 +77,6 @@ public class WorkScheduleService extends SearchService<WorkSchedule> {
         schedule.setDescription(dto.getDescription());
         schedule.setBreakStart(dto.getBreakStart());
         schedule.setBreakEnd(dto.getBreakEnd());
+        schedule.setTotalWorkHours(dto.getTotalWorkHours());
     }
 }

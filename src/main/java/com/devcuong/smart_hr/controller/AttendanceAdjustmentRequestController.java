@@ -56,4 +56,20 @@ public class AttendanceAdjustmentRequestController {
         adjustmentService.deleteAdjustment(id);
         return ApiResponse.builder().build().success();
     }
+
+    @PostMapping("/approve/{id}/{approvedBy}")
+    public ApiResponse approveAdjustment(@PathVariable Long id, @PathVariable String approvedBy) {
+        adjustmentService.approvedAdjustment(id, approvedBy);
+        return ApiResponse.builder()
+                .build()
+                .success();
+    }
+
+    @PostMapping("/reject/{id}/{approvedBy}")
+    public ApiResponse rejectAdjustment(@PathVariable Long id, @PathVariable String approvedBy) {
+        adjustmentService.rejectedAdjustment(id, approvedBy);
+        return ApiResponse.builder()
+                .build()
+                .success();
+    }
 }

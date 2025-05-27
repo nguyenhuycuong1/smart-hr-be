@@ -5,9 +5,11 @@ import com.devcuong.smart_hr.dto.ContractDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ContractRepository extends JpaRepository<Contract, Integer>, JpaSpecificationExecutor<Contract> {
@@ -23,4 +25,10 @@ public interface ContractRepository extends JpaRepository<Contract, Integer>, Jp
 
     @Query("SELECT c FROM Contract c WHERE c.status = 'Đang hoạt động' AND c.endDate < CURRENT_DATE")
     List<Contract> findExpiredContracts();
+
+    @Query("SELECT c FROM Contract c WHERE c.employeeCode = :employeeCode AND c.status = 'Đang hoạt động' ORDER BY c.startDate DESC LIMIT 1")
+    Optional<Contract> findFirstByEmployeeCodeAndIsActiveOrderByStartDateDesc(@Param("employeeCode") String employeeCode);
+
+    @Query("SELECT c FROM Contract c WHERE c.status = 'Đang hoạt động' ORDER BY c.startDate DESC")
+    List<Contract> findAllContractIsActive();
 }

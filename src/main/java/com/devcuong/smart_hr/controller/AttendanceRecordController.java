@@ -56,4 +56,28 @@ public class AttendanceRecordController {
         attendanceRecordService.deleteAttendanceRecord(id);
         return ApiResponse.builder().build().success();
     }
+
+    @PostMapping("/check-in/{employeeCode}")
+    public ApiResponse checkIn(@PathVariable String employeeCode) {
+        return ApiResponse.builder()
+                .data(attendanceRecordService.checkIn(employeeCode))
+                .build()
+                .success();
+    }
+
+    @PostMapping("/check-out/{employeeCode}/{attendanceRecordId}")
+    public ApiResponse checkOut(@PathVariable String employeeCode, @PathVariable Long attendanceRecordId) {
+        return ApiResponse.builder()
+                .data(attendanceRecordService.checkOut(attendanceRecordId,employeeCode))
+                .build()
+                .success();
+    }
+
+    @GetMapping("/monthly-summary/{employeeCode}")
+    public ApiResponse getMonthlySummary(@PathVariable String employeeCode) {
+        return ApiResponse.builder()
+                .data(attendanceRecordService.getCurrentMonthAttendanceSummary(employeeCode))
+                .build()
+                .success();
+    }
 }

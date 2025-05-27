@@ -75,4 +75,5 @@ public class Contract {
 
     @Column(name = "note")
     String note;
+
 }
