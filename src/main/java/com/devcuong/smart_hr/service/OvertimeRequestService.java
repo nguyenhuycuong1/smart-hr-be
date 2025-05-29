@@ -3,6 +3,7 @@ package com.devcuong.smart_hr.service;
 import com.devcuong.smart_hr.Entity.OvertimeRequest;
 import com.devcuong.smart_hr.dto.OvertimeRequestDTO;
 import com.devcuong.smart_hr.dto.request.PageFilterInput;
+import com.devcuong.smart_hr.enums.ApprovalStatus;
 import com.devcuong.smart_hr.exception.AppException;
 import com.devcuong.smart_hr.exception.ErrorCode;
 import com.devcuong.smart_hr.repository.OvertimeRequestRepository;
@@ -72,6 +73,24 @@ public class OvertimeRequestService extends SearchService<OvertimeRequest> {
         overtimeRequest.setReason(dto.getReason());
         overtimeRequest.setStatus(dto.getStatus());
         overtimeRequest.setApprovedBy(dto.getApprovedBy());
-        overtimeRequest.setApprovalDate(dto.getApprovalDate());
+        overtimeRequest.setApprovedAt(dto.getApprovedAt());
+    }
+
+    public void approveOvertimeRequest(Long id, String approvedBy) {
+        OvertimeRequest overtimeRequest = repository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED, "Overtime request not found"));
+        overtimeRequest.setStatus(ApprovalStatus.PHEDUYET);
+        overtimeRequest.setApprovedBy(approvedBy);
+        overtimeRequest.setApprovedAt(LocalDateTime.now());
+        repository.save(overtimeRequest);
+    }
+
+    public void rejectOvertimeRequest(Long id, String rejectedBy) {
+        OvertimeRequest overtimeRequest = repository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED, "Overtime request not found"));
+        overtimeRequest.setStatus(ApprovalStatus.TUCHOI);
+        overtimeRequest.setApprovedBy(rejectedBy);
+        overtimeRequest.setApprovedAt(LocalDateTime.now());
+        repository.save(overtimeRequest);
     }
 }

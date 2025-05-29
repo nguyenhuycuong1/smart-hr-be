@@ -56,4 +56,20 @@ public class OvertimeRequestController {
         overtimeRequestService.deleteOvertimeRequest(id);
         return ApiResponse.builder().build().success();
     }
+
+    @PostMapping("/approve/{id}/{approvedBy}")
+    public ApiResponse approveOvertimeRequest(@PathVariable Long id, @PathVariable String approvedBy) {
+        overtimeRequestService.approveOvertimeRequest(id, approvedBy);
+        return ApiResponse.builder()
+                .build()
+                .success();
+    }
+
+    @PostMapping("/reject/{id}/{approvedBy}")
+    public ApiResponse rejectOvertimeRequest(@PathVariable Long id, @PathVariable String approvedBy) {
+        overtimeRequestService.rejectOvertimeRequest(id, approvedBy);
+        return ApiResponse.builder()
+                .build()
+                .success();
+    }
 }

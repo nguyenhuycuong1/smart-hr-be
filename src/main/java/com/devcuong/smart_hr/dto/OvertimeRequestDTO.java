@@ -32,6 +32,6 @@ public class OvertimeRequestDTO {
     @JsonProperty("approved_by")
     private String approvedBy;
     
-    @JsonProperty("approval_date")
-    private LocalDateTime approvalDate;
+    @JsonProperty("approved_at")
+    private LocalDateTime approvedAt;
 }

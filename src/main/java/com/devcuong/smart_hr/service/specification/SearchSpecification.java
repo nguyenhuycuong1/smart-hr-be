@@ -8,6 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +39,17 @@ public class SearchSpecification<T> implements Specification<T> {
                         } else if (value instanceof LocalDate) {
                             // Đối với LocalDate, sử dụng equal
                             predicates.add(cb.equal(root.get(field.getName()), value));
+                        } else if (value instanceof LocalTime) {
+                            // Đối với LocalTime, chỉ tìm kiếm theo giờ, bỏ qua phút và giây
+                            LocalTime timeValue = (LocalTime) value;
+                            LocalTime startTime = LocalTime.of(timeValue.getHour(), 0, 0);
+                            LocalTime endTime = LocalTime.of(timeValue.getHour(), 59, 59);
+
+                            // Tạo điều kiện: field >= startTime AND field <= endTime
+                            predicates.add(cb.and(
+                                    cb.greaterThanOrEqualTo(root.get(field.getName()), startTime),
+                                    cb.lessThanOrEqualTo(root.get(field.getName()), endTime)
+                            ));
                         } else if (value instanceof Number) {
                             // Đối với Number (Integer, Long, Double...), sử dụng equal
                             predicates.add(cb.equal(root.get(field.getName()), value));
