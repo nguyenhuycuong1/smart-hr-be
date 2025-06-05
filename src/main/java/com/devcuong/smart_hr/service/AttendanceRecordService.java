@@ -14,6 +14,7 @@ import com.devcuong.smart_hr.enums.AttendanceStatus;
 import com.devcuong.smart_hr.exception.AppException;
 import com.devcuong.smart_hr.exception.ErrorCode;
 import com.devcuong.smart_hr.repository.AttendanceRecordRepository;
+import com.devcuong.smart_hr.repository.HolidayRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -43,6 +44,12 @@ public class AttendanceRecordService extends SearchService<AttendanceRecord> {
     
     @Autowired
     MultitenancyProperties multitenancyProperties;
+    
+    @Autowired
+    HolidayRepository holidayRepository;
+    
+    @Autowired
+    LeaveRequestService leaveRequestService;
 
     public AttendanceRecordService(AttendanceRecordRepository repository) {
         super(repository);
@@ -221,7 +228,12 @@ public class AttendanceRecordService extends SearchService<AttendanceRecord> {
             Double totalHours =
                 calculateTotalWorkHours(record.getCheckInTime(), record.getCheckOutTime(),
                         workSchedule.getBreakStart(), workSchedule.getBreakEnd());
-            updateTotalWorkHoursAndOverTimeHours(record, totalHours, workSchedule.getTotalWorkHours());
+            if(isWeekendOrHoliday(record.getWorkDate())) {
+                record.setTotalHours(0.0);
+                record.setOvertimeHours(totalHours);
+            }else{
+                updateTotalWorkHoursAndOverTimeHours(record, totalHours, workSchedule.getTotalWorkHours());
+            }
         }
 
         LocalTime overtimeThresholdTime = workSchedule.getEndTime()
@@ -371,11 +383,9 @@ public class AttendanceRecordService extends SearchService<AttendanceRecord> {
     @Scheduled(cron = "0 0 23 * * ?")  // Run at 11:00 PM every day
     public void checkDailyAbsences() {
         log.info("Running daily absence check");
-        
         // Process for each tenant
         for (String tenant : multitenancyProperties.getTenants()) {
             try {
-                log.info("Processing daily absences for tenant: {}", tenant);
                 // Set tenant context
                 TenantContext.setCurrentTenant(tenant);
                 
@@ -383,23 +393,26 @@ public class AttendanceRecordService extends SearchService<AttendanceRecord> {
                 
                 // Skip weekends or holidays if needed
                 if (isWeekendOrHoliday(today)) {
-                    log.info("Today is weekend or holiday for tenant {}, skipping absence check", tenant);
                     continue;
                 }
                 
                 // Get all active employees
                 List<String> activeEmployeeCodes = contractService.getAllActiveEmployeeCodes();
-                log.info("Found {} active employees for tenant {}", activeEmployeeCodes.size(), tenant);
                 
                 for (String employeeCode : activeEmployeeCodes) {
                     // Check if employee has an attendance record for today
                     AttendanceRecord record = repository
                             .findByEmployeeCodeAndWorkDate(employeeCode, today);
                             
-                    // If no record exists, create an absence record
+                    // If no record exists, check if employee has an approved leave request for today
                     if (record == null) {
-                        createAbsenceRecord(employeeCode, today);
-                        log.info("Created absence record for employee: {} in tenant {}", employeeCode, tenant);
+                        // Check if employee has an approved leave request for today
+                        boolean hasApprovedLeave = hasApprovedLeaveRequest(employeeCode, today);
+                        
+                        // Only create absence record if there's no approved leave request
+                        if (!hasApprovedLeave) {
+                            createAbsenceRecord(employeeCode, today);
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -408,6 +421,24 @@ public class AttendanceRecordService extends SearchService<AttendanceRecord> {
                 // Clear tenant context
                 TenantContext.clear();
             }
+        }
+    }
+
+    /**
+     * Check if the employee has an approved leave request for the specified date
+     * 
+     * @param employeeCode The employee code
+     * @param date The date to check
+     * @return true if the employee has an approved leave request for the date
+     */
+    private boolean hasApprovedLeaveRequest(String employeeCode, LocalDate date) {
+        try {
+            // Get all approved leave requests that cover the specified date
+            return leaveRequestService.hasApprovedLeaveRequestForDate(employeeCode, date);
+        } catch (Exception e) {
+            log.error("Error checking approved leave requests for employee {}: {}", 
+                    employeeCode, e.getMessage(), e);
+            return false;
         }
     }
 
@@ -433,8 +464,11 @@ public class AttendanceRecordService extends SearchService<AttendanceRecord> {
                 workDays.add(DayOfWeek.SUNDAY);
             }
         }
-        return !workDays.contains(day);
-        // Additional holiday check logic can be added here
+        
+        // Check if the day is a holiday
+        List<LocalDate> holidays = holidayRepository.findAllHolidaysForYear(date.getYear());
+        
+        return !workDays.contains(day) || holidays.contains(date);
     }
 
     private void createAbsenceRecord(String employeeCode, LocalDate date) {

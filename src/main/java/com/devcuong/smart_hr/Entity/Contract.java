@@ -1,5 +1,6 @@
 package com.devcuong.smart_hr.Entity;
 
+import com.devcuong.smart_hr.enums.ContractStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -40,7 +41,8 @@ public class Contract {
     String employeeCode;
 
     @Column(nullable = false, name = "status")
-    String status;
+    @Enumerated(EnumType.STRING)
+    ContractStatus status;
 
     @JsonProperty("start_date")
     @Column(nullable = false, name = "start_date")

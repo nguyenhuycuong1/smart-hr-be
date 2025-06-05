@@ -6,10 +6,12 @@ import com.devcuong.smart_hr.dto.ContractDTO;
 import com.devcuong.smart_hr.dto.EmployeeDTO;
 import com.devcuong.smart_hr.dto.EmployeeRecordDTO;
 import com.devcuong.smart_hr.dto.request.PageFilterInput;
+import com.devcuong.smart_hr.enums.ContractStatus;
 import com.devcuong.smart_hr.exception.AppException;
 import com.devcuong.smart_hr.exception.ErrorCode;
 import com.devcuong.smart_hr.repository.*;
 import com.devcuong.smart_hr.utils.CodeUtils;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -161,7 +163,7 @@ public class EmployeeService extends SearchService<Employee>{
             Optional<JobPosition> jobPosition = jobPositionRepository.findJobPositionByJobCode(employee.getJobCode());
             jobPosition.ifPresent(dto::setJobPosition);
         }
-        Contract contractActive = contractRepository.findByEmployeeCodeAndStatus(employee.getEmployeeCode(), "Đang hoạt động");
+        Contract contractActive = contractRepository.findByEmployeeCodeAndStatus(employee.getEmployeeCode(), ContractStatus.DANGHOATDONG);
         if(contractActive != null) {
             dto.setContractActive(contractService.convertToMap(contractActive));
         }
@@ -238,14 +240,28 @@ public class EmployeeService extends SearchService<Employee>{
         employee.setResignDate(employeeDTO.getResignDate());
         employee.setIdentificationNumber(employeeDTO.getIdentificationNumber());
         employee.setNote(employeeDTO.getNote());
+        if (employeeDTO.getResignDate() != null) {
+            // Nếu ngày nghỉ việc được cập nhật, cần cập nhật trạng thái hợp đồng
+            Contract contract = contractRepository.findByEmployeeCodeAndStatus(employee.getEmployeeCode(), ContractStatus.DANGHOATDONG);
+            if (contract != null) {
+                contract.setStatus(ContractStatus.HETHAN);
+                contract.setEndDate(employeeDTO.getResignDate());
+                contractRepository.save(contract);
+            }
+        }
 
         return employeeRepository.save(employee);
     }
 
+    @Transactional
     public void deleteEmployee(String employeeCode) {
         Employee employee = employeeRepository.findByEmployeeCode(employeeCode);
         if(employee == null) {
             throw new AppException(ErrorCode.NOT_FOUND, "employee not found");
+        }
+        List<Contract> contracts = contractRepository.findAllByEmployeeCode(employeeCode);
+        if (contracts.isEmpty()) {
+            contractRepository.deleteAll(contracts);
         }
         BankInfo bankInfo = bankInfoRepository.findByEmployeeCode(employeeCode);
         if(bankInfo != null) {

@@ -1,7 +1,10 @@
 package com.devcuong.smart_hr.dto;
 
+import com.devcuong.smart_hr.enums.ContractStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -31,8 +34,8 @@ public class ContractDTO {
     @Column(nullable = false, name = "employee_code")
     String employeeCode;
 
-    @Column(nullable = false, name = "status")
-    String status;
+    @Enumerated(EnumType.STRING)
+    ContractStatus status;
 
     @JsonProperty("start_date")
     @Column(nullable = false, name = "start_date")

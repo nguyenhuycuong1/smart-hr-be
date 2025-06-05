@@ -217,12 +217,12 @@ public class KeycloakService {
         String tenantId = tenantIdentifierResolver.resolveCurrentTenantIdentifier();
         RealmResource realmResource = keycloak.realm(realm);
         List<RoleRepresentation> roles = realmResource.roles().list();
-//        roles.removeIf(role -> {
-//            if (role.getName().contains(Constants.MDM_PREFIX)) {
-//                return !role.getName().startsWith(tenantId + "_" + Constants.MDM_PREFIX);
-//            }
-//            return false;
-//        });
+        roles.removeIf(role -> {
+            if (role.getName().contains("__group")) {
+                return !role.getName().startsWith(tenantId + "_");
+            }
+            return false;
+        });
         roles.sort((o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
         return roles;
     }

@@ -3,10 +3,13 @@ package com.devcuong.smart_hr.service;
 import com.devcuong.smart_hr.Entity.Contract;
 import com.devcuong.smart_hr.Entity.Employee;
 import com.devcuong.smart_hr.Entity.WorkSchedule;
+import com.devcuong.smart_hr.config.MultitenancyProperties;
+import com.devcuong.smart_hr.config.TenantContext;
 import com.devcuong.smart_hr.dto.ContractDTO;
 import com.devcuong.smart_hr.dto.EmployeeDTO;
 import com.devcuong.smart_hr.dto.EmployeeRecordDTO;
 import com.devcuong.smart_hr.dto.request.PageFilterInput;
+import com.devcuong.smart_hr.enums.ContractStatus;
 import com.devcuong.smart_hr.exception.AppException;
 import com.devcuong.smart_hr.exception.ErrorCode;
 import com.devcuong.smart_hr.repository.ContractRepository;
@@ -20,6 +23,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +42,9 @@ public class ContractService extends SearchService<Contract> {
 
     @Autowired
     WorkScheduleRepository workScheduleRepository;
+
+    @Autowired
+    MultitenancyProperties multitenancyProperties;
 
     public ContractService(ContractRepository repository) {
         super(repository);
@@ -156,9 +163,9 @@ public class ContractService extends SearchService<Contract> {
      * @param contractCode Mã hợp đồng hiện tại (để loại trừ khi cập nhật)
      * @param status Trạng thái của hợp đồng mới
      */
-    private void updateExistingContractsStatus(String employeeCode, String contractCode, String status) {
-        if ("Đang hoạt động".equals(status)) {
-            List<Contract> activeContracts = repository.findListByEmployeeCodeAndStatus(employeeCode, "Đang hoạt động");
+    private void updateExistingContractsStatus(String employeeCode, String contractCode, ContractStatus status) {
+        if (status == ContractStatus.DANGHOATDONG) {
+            List<Contract> activeContracts = repository.findListByEmployeeCodeAndStatus(employeeCode, ContractStatus.DANGHOATDONG);
 
             for (Contract existingContract : activeContracts) {
                 // Bỏ qua hợp đồng hiện tại nếu đang cập nhật (không phải tạo mới)
@@ -166,7 +173,7 @@ public class ContractService extends SearchService<Contract> {
                     continue;
                 }
 
-                existingContract.setStatus("Đã hủy");
+                existingContract.setStatus(ContractStatus.DAHUY);
                 repository.save(existingContract);
                 log.info("Changed contract {} status from 'Đang hoạt động' to 'Đã hủy'",
                         existingContract.getContractCode());
@@ -176,7 +183,7 @@ public class ContractService extends SearchService<Contract> {
 
     private void updateWorkInfo(Contract contract, String employeeCode) {
         Employee employee = employeeRepository.findByEmployeeCode(employeeCode);
-        if("Đang hoạt động".equals(contract.getStatus())) {
+        if(contract.getStatus() == ContractStatus.DANGHOATDONG) {
             employee.setEmployeeType(contract.getContractType());
             employee.setJobCode(contract.getJobPosition());
             employeeRepository.save(employee);
@@ -187,16 +194,48 @@ public class ContractService extends SearchService<Contract> {
     public void updateExpiredContracts() {
         List<Contract> expiredContracts = repository.findExpiredContracts();
         for (Contract contract : expiredContracts) {
-            contract.setStatus("Hết hạn");
+            contract.setStatus(ContractStatus.HETHAN);
             log.info("Changed contract {} status from 'Đang hoạt động' to 'Hết hạn'",
                     contract.getContractCode());
         }
         repository.saveAll(expiredContracts);
     }
+    
+    /**
+     * Cập nhật trạng thái các hợp đồng sắp hết hạn trong 7 ngày tới
+     */
+    public void updateSoonToExpireContracts() {
+        LocalDate sevenDaysLater = LocalDate.now().plusDays(7);
+        List<Contract> soonToExpireContracts = repository.findContractsExpiringWithinDays(sevenDaysLater);
+        
+        for (Contract contract : soonToExpireContracts) {
+            // Chỉ cập nhật nếu trạng thái hiện tại là DANGHOATDONG
+            if (contract.getStatus() == ContractStatus.DANGHOATDONG) {
+                contract.setStatus(ContractStatus.SAPHETHAN);
+                log.info("Changed contract {} status from 'Đang hoạt động' to 'Sắp hết hạn' (expires on {})",
+                        contract.getContractCode(), contract.getEndDate());
+            }
+        }
+        
+        if (!soonToExpireContracts.isEmpty()) {
+            repository.saveAll(soonToExpireContracts);
+        }
+    }
 
     @Scheduled(cron = "0 0 0 * * ?") // Chạy hàng ngày vào 0 giờ sáng (00:00:00)
     public void autoUpdateExpiredContracts() {
-        updateExpiredContracts();
+        for (String tenant : multitenancyProperties.getTenants()) {
+            try {
+                TenantContext.setCurrentTenant(tenant);
+                updateExpiredContracts();
+                updateSoonToExpireContracts(); // Thêm cập nhật hợp đồng sắp hết hạn
+            }catch (Exception e) {
+                log.error("Error updating contracts for tenant {}: {}", tenant, e.getMessage());
+            } finally {
+                TenantContext.clear();
+            }
+        }
+
     }
 
     public Contract findActiveContractByEmployeeCode(String employeeCode) {

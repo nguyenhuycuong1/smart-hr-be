@@ -50,9 +50,9 @@ public class LeaveRequest {
     @Column(name = "approved_by")
     String approvedBy;
 
-    @JsonProperty("approval_date")
-    @Column(name = "approval_date")
-    LocalDateTime approvalDate;
+    @JsonProperty("approved_at")
+    @Column(name = "approved_at")
+    LocalDateTime approvedAt;
 
     @JsonProperty("created_at")
     @Column(name = "created_at")

@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/leave-requests")
 public class LeaveRequestController {
@@ -27,7 +29,7 @@ public class LeaveRequestController {
 
     @PostMapping("/search")
     public PageResponse getAllLeaveRequests(@RequestBody PageFilterInput<LeaveRequest> input) {
-        Page<LeaveRequest> listLeaveRequests = leaveRequestService.getAllLeaveRequests(input);
+        Page<Map<String, Object>> listLeaveRequests = leaveRequestService.getAllLeaveRequests(input);
         return PageResponse.builder()
                 .data(listLeaveRequests.getContent())
                 .dataCount(listLeaveRequests.getTotalElements())
@@ -55,5 +57,29 @@ public class LeaveRequestController {
     public ApiResponse deleteLeaveRequest(@PathVariable Long id) {
         leaveRequestService.deleteLeaveRequest(id);
         return ApiResponse.builder().build().success();
+    }
+
+    @PostMapping("/approve/{id}/{approvedBy}")
+    public ApiResponse approveLeaveRequest(@PathVariable Long id, @PathVariable String approvedBy) {
+        return ApiResponse.builder()
+                .data(leaveRequestService.approvalLeaveRequest(id, approvedBy))
+                .build()
+                .success();
+    }
+
+    @PostMapping("/reject/{id}/{approvedBy}")
+    public ApiResponse rejectLeaveRequest(@PathVariable Long id, @PathVariable String approvedBy) {
+        return ApiResponse.builder()
+                .data(leaveRequestService.rejectLeaveRequest(id, approvedBy))
+                .build()
+                .success();
+    }
+
+    @GetMapping("/{employeeCode}/leave-balance")
+    public ApiResponse getLeaveBalance(@PathVariable String employeeCode) {
+        return ApiResponse.builder()
+                .data(leaveRequestService.calculateLeaveBalance(employeeCode))
+                .build()
+                .success();
     }
 }
