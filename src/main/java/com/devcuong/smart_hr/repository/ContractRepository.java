@@ -28,12 +28,12 @@ public interface ContractRepository extends JpaRepository<Contract, Integer>, Jp
     @Query("SELECT c FROM Contract c WHERE c.status = 'DANGHOATDONG' AND c.endDate < CURRENT_DATE")
     List<Contract> findExpiredContracts();
     
-    @Query("SELECT c FROM Contract c WHERE c.status = 'DANGHOATDONG' OR c.status = 'SAPHETHAN' AND c.endDate BETWEEN CURRENT_DATE AND :expiryDate")
+    @Query("SELECT c FROM Contract c WHERE (c.status = 'DANGHOATDONG' OR c.status = 'SAPHETHAN') AND c.endDate BETWEEN CURRENT_DATE AND :expiryDate")
     List<Contract> findContractsExpiringWithinDays(@Param("expiryDate") LocalDate expiryDate);
 
-    @Query("SELECT c FROM Contract c WHERE c.employeeCode = :employeeCode AND c.status = 'DANGHOATDONG' OR c.status = 'SAPHETHAN' ORDER BY c.startDate DESC LIMIT 1")
+    @Query("SELECT c FROM Contract c WHERE c.employeeCode = :employeeCode AND (c.status = 'DANGHOATDONG' OR c.status = 'SAPHETHAN') ORDER BY c.startDate DESC LIMIT 1")
     Optional<Contract> findFirstByEmployeeCodeAndIsActiveOrderByStartDateDesc(@Param("employeeCode") String employeeCode);
 
-    @Query("SELECT c FROM Contract c WHERE c.status = 'DANGHOATDONG' OR c.status = 'SAPHETHAN' ORDER BY c.startDate DESC")
+    @Query("SELECT c FROM Contract c WHERE (c.status = 'DANGHOATDONG' OR c.status = 'SAPHETHAN') ORDER BY c.startDate DESC")
     List<Contract> findAllContractIsActive();
 }

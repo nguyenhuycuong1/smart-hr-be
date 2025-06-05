@@ -12,7 +12,9 @@ public enum ErrorCode {
     INPUT_INVALID(101, "Input invalid", HttpStatus.BAD_REQUEST),
     UNCATEGORIZED(102, "Uncategorized Exception", HttpStatus.INTERNAL_SERVER_ERROR),
     NOT_EXISTS(103, "Not Exists", HttpStatus.NOT_FOUND),
-    NOT_FOUND(104, "Not Found", HttpStatus.NOT_FOUND ),;
+    NOT_FOUND(104, "Not Found", HttpStatus.NOT_FOUND ),
+    BAD_REQUEST(105, "Bad Request", HttpStatus.BAD_REQUEST),
+    ;
 
     int code;
     String message;

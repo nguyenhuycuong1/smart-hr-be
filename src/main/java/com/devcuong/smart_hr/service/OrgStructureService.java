@@ -46,21 +46,29 @@ public class OrgStructureService {
         Department existingDepartment = departmentRepository.findDepartmentByDepartmentCode(departmentDTO.getDepartmentCode()).orElse(null);
         if (existingDepartment == null) {
             Department newDepartment = new Department();
+            if (departmentDTO.getDepartmentCode() == null || departmentDTO.getDepartmentCode().trim().isEmpty()) {
+                throw new AppException(ErrorCode.INPUT_INVALID, "Mã phòng ban không được để trống!");
+            }
             newDepartment.setDepartmentCode(departmentDTO.getDepartmentCode());
+            if (departmentDTO.getDepartmentName() == null || departmentDTO.getDepartmentName().trim().isEmpty()) {
+                throw new AppException(ErrorCode.INPUT_INVALID, "Tên phòng ban không được để trống!");
+            }
             newDepartment.setDepartmentName(departmentDTO.getDepartmentName());
             newDepartment.setDescription(departmentDTO.getDescription());
-            log.info("Create Department {}", newDepartment);
             departmentRepository.save(newDepartment);
             return newDepartment;
         } else {
-            throw new AppException(ErrorCode.INPUT_INVALID, "Department already exists");
+            throw new AppException(ErrorCode.INPUT_INVALID, "Phòng ban đã tồn tại với mã: " + departmentDTO.getDepartmentCode());
         }
     }
 
     public Department updateDepartment(String departmentCode, DepartmentDTO departmentDTO) {
         Department oldDepartment = getDepartment(departmentCode);
         if (oldDepartment == null) {
-            throw new AppException(ErrorCode.NOT_EXISTS, "Department not found");
+            throw new AppException(ErrorCode.NOT_EXISTS, "Phòng ban không tồn tại");
+        }
+        if (departmentDTO.getDepartmentCode() == null || departmentDTO.getDepartmentCode().trim().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Mã phòng ban không được để trống!");
         }
         oldDepartment.setDepartmentName(departmentDTO.getDepartmentName());
         oldDepartment.setDescription(departmentDTO.getDescription());
@@ -94,7 +102,13 @@ public class OrgStructureService {
         if (ExistingTeam == null) {
 
         Team newTeam = new Team();
+        if (teamDTO.getTeamCode() == null || teamDTO.getTeamCode().trim().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Mã đội nhóm không được để trống!");
+        }
         newTeam.setTeamCode(teamDTO.getTeamCode());
+        if (teamDTO.getTeamName() == null || teamDTO.getTeamName().trim().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Tên đội nhóm không được để trống!");
+        }
         newTeam.setTeamName(teamDTO.getTeamName());
         newTeam.setDescription(teamDTO.getDescription());
         newTeam.setDepartmentCode(teamDTO.getDepartmentCode());
@@ -151,13 +165,19 @@ public class OrgStructureService {
     public JobPosition createJobPosition(JobPositionDTO jobPositionDTO) {
         JobPosition existingJobPosition = jobPositionRepository.findJobPositionByJobCode(jobPositionDTO.getJobCode()).orElse(null);
         if (existingJobPosition == null) {
-        JobPosition newJobPosition = new JobPosition();
-        newJobPosition.setJobCode(jobPositionDTO.getJobCode());
-        newJobPosition.setJobName(jobPositionDTO.getJobName());
-        newJobPosition.setDepartmentCode(jobPositionDTO.getDepartmentCode());
-        newJobPosition.setDescription(jobPositionDTO.getDescription());
-        jobPositionRepository.save(newJobPosition);
-        return newJobPosition;
+            JobPosition newJobPosition = new JobPosition();
+            if (jobPositionDTO.getJobCode() == null || jobPositionDTO.getJobCode().trim().isEmpty()) {
+                throw new AppException(ErrorCode.INPUT_INVALID, "Mã vị trí công việc không được để trống!");
+            }
+            newJobPosition.setJobCode(jobPositionDTO.getJobCode());
+            if (jobPositionDTO.getJobName() == null || jobPositionDTO.getJobName().trim().isEmpty()) {
+                throw new AppException(ErrorCode.INPUT_INVALID, "Tên vị trí công việc không được để trống!");
+            }
+            newJobPosition.setJobName(jobPositionDTO.getJobName());
+            newJobPosition.setDepartmentCode(jobPositionDTO.getDepartmentCode());
+            newJobPosition.setDescription(jobPositionDTO.getDescription());
+            jobPositionRepository.save(newJobPosition);
+            return newJobPosition;
         }else {
             throw new AppException(ErrorCode.NOT_EXISTS, "Job Position already exists");
         }
@@ -166,7 +186,10 @@ public class OrgStructureService {
     public JobPosition updateJobPosition(String jobCode, JobPositionDTO jobPositionDTO) {
         JobPosition oldJobPosition = getJobPosition(jobCode);
         if (oldJobPosition == null) {
-            throw new AppException(ErrorCode.NOT_EXISTS, "JobPosition not found");
+            throw new AppException(ErrorCode.NOT_EXISTS, "Vị trí công việc không tồn tại");
+        }
+        if (jobPositionDTO.getJobCode() == null || jobPositionDTO.getJobCode().trim().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Mã vị trí công việc không được để trống!");
         }
         oldJobPosition.setJobName(jobPositionDTO.getJobName());
         oldJobPosition.setDepartmentCode(jobPositionDTO.getDepartmentCode());
@@ -179,7 +202,7 @@ public class OrgStructureService {
     public void deleteJobPosition(String jobCode) {
         JobPosition jobPosition = getJobPosition(jobCode);
         if (jobPosition == null) {
-            throw new AppException(ErrorCode.NOT_EXISTS, "JobPosition not found");
+            throw new AppException(ErrorCode.NOT_EXISTS, "Vị trí công việc không tồn tại");
         }
         jobPositionRepository.delete(jobPosition);
     }

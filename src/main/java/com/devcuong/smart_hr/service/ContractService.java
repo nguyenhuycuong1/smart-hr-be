@@ -93,6 +93,38 @@ public class ContractService extends SearchService<Contract> {
     }
 
     public Contract createContract(ContractDTO contractDto) {
+        // Kiểm tra các trường bắt buộc
+        if (contractDto.getEmployeeCode() == null || contractDto.getEmployeeCode().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Mã nhân viên không được bỏ trống!");
+        }
+        if (contractDto.getContractType() == null || contractDto.getContractType().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Loại hợp đồng không được bỏ trống!");
+        }
+        if (contractDto.getStartDate() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày bắt đầu không được bỏ trống!");
+        }
+        if (contractDto.getEndDate() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày kết thúc không được bỏ trống!");
+        }
+        if (contractDto.getBasicSalary() == null || contractDto.getBasicSalary().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Lương cơ bản không được bỏ trống!");
+        }
+        if (contractDto.getJobPosition() == null || contractDto.getJobPosition().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Vị trí công việc không được bỏ trống!");
+        }
+        if (contractDto.getWorkScheduleId() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Lịch làm việc không được bỏ trống!");
+        }
+        if (contractDto.getTypeOfWork() == null || contractDto.getTypeOfWork().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Loại công việc không được bỏ trống!");
+        }
+        if (contractDto.getPayFrequency() == null || contractDto.getPayFrequency().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Tần suất thanh toán không được bỏ trống!");
+        }
+        if (contractDto.getStatus() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Trạng thái hợp đồng không được bỏ trống!");
+        }
+
         Contract contract = new Contract();
         contract.setContractCode("TEMP");
         contract.setContractName("TEMP");
@@ -126,6 +158,41 @@ public class ContractService extends SearchService<Contract> {
     }
 
     public Contract updateContract(ContractDTO contractDto) {
+        // Kiểm tra các trường bắt buộc
+        if (contractDto.getContractCode() == null || contractDto.getContractCode().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Mã hợp đồng không được bỏ trống!");
+        }
+        if (contractDto.getEmployeeCode() == null || contractDto.getEmployeeCode().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Mã nhân viên không được bỏ trống!");
+        }
+        if (contractDto.getContractType() == null || contractDto.getContractType().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Loại hợp đồng không được bỏ trống!");
+        }
+        if (contractDto.getStartDate() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày bắt đầu không được bỏ trống!");
+        }
+        if (contractDto.getEndDate() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày kết thúc không được bỏ trống!");
+        }
+        if (contractDto.getBasicSalary() == null || contractDto.getBasicSalary().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Lương cơ bản không được bỏ trống!");
+        }
+        if (contractDto.getJobPosition() == null || contractDto.getJobPosition().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Vị trí công việc không được bỏ trống!");
+        }
+        if (contractDto.getWorkScheduleId() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Lịch làm việc không được bỏ trống!");
+        }
+        if (contractDto.getTypeOfWork() == null || contractDto.getTypeOfWork().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Loại công việc không được bỏ trống!");
+        }
+        if (contractDto.getPayFrequency() == null || contractDto.getPayFrequency().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Tần suất thanh toán không được bỏ trống!");
+        }
+        if (contractDto.getStatus() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Trạng thái hợp đồng không được bỏ trống!");
+        }
+
         Contract contract = repository.findByContractCode(contractDto.getContractCode());
         if(contract == null) {
             throw new AppException(ErrorCode.UNCATEGORIZED, "Contract not found");
@@ -200,14 +267,14 @@ public class ContractService extends SearchService<Contract> {
         }
         repository.saveAll(expiredContracts);
     }
-    
+
     /**
      * Cập nhật trạng thái các hợp đồng sắp hết hạn trong 7 ngày tới
      */
     public void updateSoonToExpireContracts() {
         LocalDate sevenDaysLater = LocalDate.now().plusDays(7);
         List<Contract> soonToExpireContracts = repository.findContractsExpiringWithinDays(sevenDaysLater);
-        
+
         for (Contract contract : soonToExpireContracts) {
             // Chỉ cập nhật nếu trạng thái hiện tại là DANGHOATDONG
             if (contract.getStatus() == ContractStatus.DANGHOATDONG) {
@@ -216,7 +283,7 @@ public class ContractService extends SearchService<Contract> {
                         contract.getContractCode(), contract.getEndDate());
             }
         }
-        
+
         if (!soonToExpireContracts.isEmpty()) {
             repository.saveAll(soonToExpireContracts);
         }
@@ -248,5 +315,4 @@ public class ContractService extends SearchService<Contract> {
                 .map(Contract::getEmployeeCode)
                 .collect(Collectors.toList());
     }
-
 }

@@ -62,6 +62,21 @@ public class EmployeeService extends SearchService<Employee>{
         if(settingSystem == null) {
             throw new AppException(ErrorCode.NOT_EXISTS, "Setting system does not exist");
         }
+
+        // Kiểm tra các trường bắt buộc
+        if (employeeDTO.getFirstName() == null || employeeDTO.getFirstName().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Tên không được bỏ trống!");
+        }
+        if (employeeDTO.getDob() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày sinh không được bỏ trống!");
+        }
+        if (employeeDTO.getHireDate() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày vào làm không được bỏ trống!");
+        }
+        if (employeeDTO.getGender() == null || employeeDTO.getGender().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Giới tính không được bỏ trống!");
+        }
+
         Employee employee = new Employee();
 
         employee.setEmployeeCode("TEMP");
@@ -218,6 +233,20 @@ public class EmployeeService extends SearchService<Employee>{
         Employee employee = employeeRepository.findByEmployeeCode(employeeDTO.getEmployeeCode());
         if (employee == null) {
             throw new AppException(ErrorCode.NOT_EXISTS, "Employee does not exist");
+        }
+
+        // Kiểm tra các trường bắt buộc
+        if (employeeDTO.getFirstName() == null || employeeDTO.getFirstName().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Tên không được bỏ trống!");
+        }
+        if (employeeDTO.getDob() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày sinh không được bỏ trống!");
+        }
+        if (employeeDTO.getHireDate() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày vào làm không được bỏ trống!");
+        }
+        if (employeeDTO.getGender() == null || employeeDTO.getGender().trim().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Giới tính không được bỏ trống!");
         }
 
         employee.setEmployeeType(employeeDTO.getEmployeeType());

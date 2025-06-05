@@ -43,6 +43,7 @@ multitenancy:
   tenants:
     - devvn
     - myhr
+    - demovn
 
 
 
