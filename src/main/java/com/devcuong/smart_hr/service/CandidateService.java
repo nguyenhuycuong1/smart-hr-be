@@ -75,8 +75,12 @@ public class CandidateService extends SearchService<Candidate>{
         map.put("dob", candidate.getDob());
         map.put("current_address", candidate.getCurrentAddress());
         JobPost jobPost = jobPostService.findJobPostByJobPostCode(candidate.getJobPostCode());
-        JobPostRecordDTO jobPostRecordDTO = jobPostService.convertToJobPostRecordDTO(jobPost);
-        map.put("job_position", jobPostRecordDTO);
+        if(jobPost == null || candidate.getJobPostCode() == null) {
+            map.put("job_position", null);
+        }else {
+            JobPostRecordDTO jobPostRecordDTO = jobPostService.convertToJobPostRecordDTO(jobPost);
+            map.put("job_position", jobPostRecordDTO);
+        }
         return map;
     }
 
@@ -91,6 +95,27 @@ public class CandidateService extends SearchService<Candidate>{
     public Candidate create(CandidateDTO candidate) {
         Candidate newCandidate = new Candidate();
         newCandidate.setCandidateCode("TEMP");
+        if(candidate.getFirstName() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Tên ứng viên không được để trống!");
+        }
+        if(candidate.getDob() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày sinh ứng viên không được để trống!");
+        }
+        if(candidate.getEmail() == null || candidate.getEmail().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Email ứng viên không được để trống!");
+        }
+        if(candidate.getJobPostCode() == null || candidate.getJobPostCode().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Mã bài đăng tuyển dụng không được để trống!");
+        }
+        JobPost jobPost = jobPostService.findJobPostByJobPostCode(candidate.getJobPostCode());
+        if(jobPost == null) {
+            throw new AppException(ErrorCode.NOT_FOUND, "Không tìm thấy bài đăng tuyển dụng với mã: " + candidate.getJobPostCode());
+        }
+        Candidate existingCandidate = candidateRepository.findByEmailAndJobPostCode(candidate.getEmail(), candidate.getJobPostCode());
+        if(existingCandidate != null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Ứng viên với email này đã có trong danh sách ứng viên rồi!");
+        }
+
         newCandidate.setEmail(candidate.getEmail());
         newCandidate.setFirstName(candidate.getFirstName());
         newCandidate.setLastName(candidate.getLastName());
@@ -114,6 +139,19 @@ public class CandidateService extends SearchService<Candidate>{
 
     @Transactional
     public Candidate update(CandidateDTO candidateDTO) {
+        if(candidateDTO.getFirstName() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Tên ứng viên không được để trống!");
+        }
+        if(candidateDTO.getDob() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày sinh ứng viên không được để trống!");
+        }
+        if(candidateDTO.getEmail() == null || candidateDTO.getEmail().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Email ứng viên không được để trống!");
+        }
+        JobPost jobPost = jobPostService.findJobPostByJobPostCode(candidateDTO.getJobPostCode());
+        if(jobPost == null) {
+            throw new AppException(ErrorCode.NOT_FOUND, "Không tìm thấy bài đăng tuyển dụng với mã: " + candidateDTO.getJobPostCode());
+        }
         Candidate candidate = findById(candidateDTO.getId());
         candidate.setFirstName(candidateDTO.getFirstName());
         candidate.setLastName(candidateDTO.getLastName());

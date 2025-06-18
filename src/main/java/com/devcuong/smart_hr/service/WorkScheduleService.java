@@ -49,6 +49,15 @@ public class WorkScheduleService extends SearchService<WorkSchedule> {
     }
 
     public WorkSchedule createWorkSchedule(WorkScheduleDTO scheduleDTO) {
+        if(scheduleDTO.getScheduleName() == null || scheduleDTO.getScheduleName().isEmpty()) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Tên ca làm việc không được để trống");
+        }
+        if(scheduleDTO.getStartTime() == null || scheduleDTO.getEndTime() == null) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Thời gian bắt đầu và kết thúc không được để trống");
+        }
+        if(scheduleDTO.getTotalWorkHours()== null || scheduleDTO.getTotalWorkHours() <= 0) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Tổng số giờ làm việc phải lớn hơn 0");
+        }
         WorkSchedule schedule = new WorkSchedule();
         updateScheduleFromDTO(schedule, scheduleDTO);
         schedule.setCreatedAt(LocalDate.now());
@@ -57,6 +66,15 @@ public class WorkScheduleService extends SearchService<WorkSchedule> {
     }
 
     public WorkSchedule updateWorkSchedule(Integer id, WorkScheduleDTO scheduleDTO) {
+        if(scheduleDTO.getScheduleName() == null || scheduleDTO.getScheduleName().isEmpty()) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Tên ca làm việc không được để trống");
+        }
+        if(scheduleDTO.getStartTime() == null || scheduleDTO.getEndTime() == null) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Thời gian bắt đầu và kết thúc không được để trống");
+        }
+        if(scheduleDTO.getTotalWorkHours()== null || scheduleDTO.getTotalWorkHours() <= 0) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Tổng số giờ làm việc phải lớn hơn 0");
+        }
         WorkSchedule schedule = repository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED, "Work schedule not found"));
         updateScheduleFromDTO(schedule, scheduleDTO);
@@ -79,4 +97,5 @@ public class WorkScheduleService extends SearchService<WorkSchedule> {
         schedule.setBreakEnd(dto.getBreakEnd());
         schedule.setTotalWorkHours(dto.getTotalWorkHours());
     }
+
 }

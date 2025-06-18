@@ -74,15 +74,62 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.keycloak</groupId>
 			<artifactId>keycloak-admin-client</artifactId>
 			<version>21.1.2</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.jboss.resteasy</groupId>
+					<artifactId>resteasy-multipart-provider</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<!-- Thêm lại resteasy-multipart-provider nhưng loại bỏ mail -->
+		<dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-multipart-provider</artifactId>
+			<version>4.7.9.Final</version>
+			<exclusions>
+				<exclusion>
+					<groupId>com.sun.mail</groupId>
+					<artifactId>jakarta.mail</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi</artifactId>
+			<version>5.4.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>5.4.0</version>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+			<!-- Remove exclusions to let Spring Boot manage the API, and we provide the Angus implementation -->
+		</dependency>
+
+		<!-- Thêm đúng phiên bản angus-mail -->
+		<dependency>
+			<groupId>org.eclipse.angus</groupId>
+			<artifactId>angus-mail</artifactId>
+			<version>2.0.3</version>
 		</dependency>
 	</dependencies>
 

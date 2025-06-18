@@ -49,6 +49,12 @@ public class PipelineStageService extends SearchService<PipelineStage> {
     }
 
     public PipelineStage createPipeline(PipelineStageDTO pipelineStageDTO) {
+        if(pipelineStageDTO.getJobPostCode() == null || pipelineStageDTO.getJobPostCode().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Mã bài đăng tuyển dụng không được bỏ trống");
+        }
+        if(pipelineStageDTO.getStageName() == null || pipelineStageDTO.getStageName().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Tên giai đoạn không được bỏ trống");
+        }
         PipelineStage pipelineStage = new PipelineStage();
         pipelineStage.setJobPostCode(pipelineStageDTO.getJobPostCode());
         pipelineStage.setStageName(pipelineStageDTO.getStageName());
@@ -79,6 +85,12 @@ public class PipelineStageService extends SearchService<PipelineStage> {
     public void updateStageName(PipelineStageDTO pipelineStageDTO) {
         PipelineStage pipelineStage = pipelineStageRepository.findById(pipelineStageDTO.getId()).orElse(null);
         if (pipelineStage != null) {
+            if(pipelineStageDTO.getJobPostCode() == null || pipelineStageDTO.getJobPostCode().isEmpty()) {
+                throw new AppException(ErrorCode.BAD_REQUEST, "Mã bài đăng tuyển dụng không được bỏ trống");
+            }
+            if(pipelineStageDTO.getStageName() == null || pipelineStageDTO.getStageName().isEmpty()) {
+                throw new AppException(ErrorCode.BAD_REQUEST, "Tên giai đoạn không được bỏ trống");
+            }
             pipelineStage.setStageName(pipelineStageDTO.getStageName());
         }else {
             throw new AppException(ErrorCode.NOT_FOUND, "Pipeline not found");

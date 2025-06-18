@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/attendance-records")
 public class AttendanceRecordController {
@@ -27,7 +29,7 @@ public class AttendanceRecordController {
 
     @PostMapping("/search")
     public PageResponse getAllAttendanceRecords(@RequestBody PageFilterInput<AttendanceRecord> input) {
-        Page<AttendanceRecord> listAttendanceRecords = attendanceRecordService.getAllAttendanceRecords(input);
+        Page<Map<String, Object>> listAttendanceRecords = attendanceRecordService.getAllAttendanceRecords(input);
         return PageResponse.builder()
                 .data(listAttendanceRecords.getContent())
                 .dataCount(listAttendanceRecords.getTotalElements())

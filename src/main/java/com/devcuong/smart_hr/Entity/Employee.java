@@ -83,6 +83,10 @@ public class Employee {
     String maritalStatus;
     @Column(name = "note")
     String note;
-
-
+    @Column(name = "is_active")
+    @JsonProperty("is_active")
+    Boolean isActive;
+    @Column(name = "has_account")
+    @JsonProperty("has_account")
+    Boolean hasAccount;
 }

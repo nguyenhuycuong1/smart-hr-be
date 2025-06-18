@@ -8,11 +8,18 @@ import com.devcuong.smart_hr.dto.EmployeeWithBankInfoDTO;
 import com.devcuong.smart_hr.dto.request.PageFilterInput;
 import com.devcuong.smart_hr.dto.response.ApiResponse;
 import com.devcuong.smart_hr.dto.response.PageResponse;
+import com.devcuong.smart_hr.exception.AppException;
+import com.devcuong.smart_hr.exception.ErrorCode;
 import com.devcuong.smart_hr.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -56,5 +63,21 @@ public class EmployeeController {
 
     }
 
-}
+    @PostMapping("/export-excel")
+    public ResponseEntity<ByteArrayResource> exportExcel(@RequestBody PageFilterInput<Employee> input) {
+        try {
+            ByteArrayInputStream excelData = employeeService.exportEmployeeData(input);
 
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-Disposition", "attachment; filename=employees.xls");
+            headers.add("Content-Type", "application/vnd.ms-excel");
+
+            return ResponseEntity
+                    .ok()
+                    .headers(headers)
+                    .body(new ByteArrayResource(excelData.readAllBytes()));
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Failed to export employee data: " + e.getMessage());
+        }
+    }
+}

@@ -1,5 +1,6 @@
 package com.devcuong.smart_hr.service;
 
+import com.devcuong.smart_hr.Entity.Candidate;
 import com.devcuong.smart_hr.Entity.JobPost;
 import com.devcuong.smart_hr.Entity.PipelineStage;
 import com.devcuong.smart_hr.Entity.RecruitmentRequest;
@@ -9,19 +10,20 @@ import com.devcuong.smart_hr.dto.request.PageFilterInput;
 import com.devcuong.smart_hr.enums.RecruitmentRequestStatus;
 import com.devcuong.smart_hr.exception.AppException;
 import com.devcuong.smart_hr.exception.ErrorCode;
-import com.devcuong.smart_hr.repository.JobPostRepository;
-import com.devcuong.smart_hr.repository.PipelineStageRepository;
-import com.devcuong.smart_hr.repository.RecruitmentRequestRepository;
+import com.devcuong.smart_hr.repository.*;
 import com.devcuong.smart_hr.utils.CodeUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class JobPostService extends SearchService<JobPost> {
 
@@ -36,6 +38,12 @@ public class JobPostService extends SearchService<JobPost> {
 
     @Autowired
     private PipelineStageRepository pipelineStageRepository;
+
+    @Autowired
+    private CandidateStageRepository candidateStageRepository;
+
+    @Autowired
+    private CandidateRepository candidateRepository;
 
 
     public JobPostService(JobPostRepository repository) {
@@ -64,11 +72,19 @@ public class JobPostService extends SearchService<JobPost> {
         RecruitmentRequest recruitmentRequest = recruitmentRequestRepository.findByRecruitmentRequestCode(jobPostRecordDTO.getRequestCode()).orElseThrow(null);
         if (recruitmentRequest != null) {
             jobPostRecordDTO.setRecruitmentRequestRecord(recruitmentRequestService.convertToRecruitmentRequestRecordDTO(recruitmentRequest));
+        }else {
+            jobPostRecordDTO.setRecruitmentRequestRecord(null);
         }
         return jobPostRecordDTO;
     }
 
     public JobPost createJobPost(JobPostDTO post) {
+        if (post.getRequestCode() == null || post.getRequestCode().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Mã yêu cầu tuyển dụng không được để trống.");
+        }
+        if (post.getTitle() == null || post.getTitle().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Tiêu đề bài đăng tuyển dụng không được để trống.");
+        }
         JobPost existingJobPost = jobPostRepository.findByRequestCode(post.getRequestCode()).orElse(null);
         if (existingJobPost != null) {
             throw new AppException(ErrorCode.INPUT_INVALID, "Yêu cầu tuyển dụng này đã được đăng bài! Vui lòng chọn yêu cầu tuyển dụng khác.");
@@ -138,6 +154,12 @@ public class JobPostService extends SearchService<JobPost> {
     }
 
     public JobPost updateJobPost(JobPostDTO jobPostDTO) {
+        if (jobPostDTO.getRequestCode() == null || jobPostDTO.getRequestCode().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Mã yêu cầu tuyển dụng không được để trống.");
+        }
+        if (jobPostDTO.getTitle() == null || jobPostDTO.getTitle().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Tiêu đề bài đăng tuyển dụng không được để trống.");
+        }
         JobPost jobPost = jobPostRepository.findByRequestCode(jobPostDTO.getRequestCode()).orElse(null);
         if (jobPost == null) {
             throw new AppException(ErrorCode.INPUT_INVALID, "Không tìm thấy bài đăng tuyển dụng");
@@ -147,12 +169,30 @@ public class JobPostService extends SearchService<JobPost> {
         return jobPostRepository.save(jobPost);
     }
 
+    @Transactional
     public void deleteJobPost(Long id) {
         JobPost jobPostEntity = jobPostRepository.findById(id).orElse(null);
         if (jobPostEntity == null) {
             throw new AppException(ErrorCode.INPUT_INVALID, "Không tìm thấy bài đăng tuyển dụng");
         }
-        jobPostRepository.delete(jobPostEntity);
+
+        Candidate candidateExisting = candidateRepository.findByJobPostCode(jobPostEntity.getJobPostCode()).stream().findFirst().orElse(null);
+        log.info("Candidate existing: {}", candidateExisting);
+        if (candidateExisting != null) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Không thể xóa bài đăng tuyển dụng khi có ứng viên đã nộp đơn.");
+        }
+        else {
+            // Xóa tất cả các giai đoạn ứng viên liên quan đến bài đăng tuyển dụng này
+            List<PipelineStage> pipelineStages = pipelineStageRepository.findByJobPostCode(jobPostEntity.getJobPostCode());
+            if (!pipelineStages.isEmpty()) {
+                pipelineStages.forEach(pipelineStage -> {
+                    candidateStageRepository.deleteByStageId(pipelineStage.getId());
+                    pipelineStageRepository.delete(pipelineStage);
+                });
+            }
+    //        candidateRepository.deleteByJobPostCode(jobPostEntity.getJobPostCode());
+            jobPostRepository.delete(jobPostEntity);
+        }
     }
 
     public void updateIsOpenJobPost(String jobPostCode ,Boolean isOpen) {

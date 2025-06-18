@@ -42,11 +42,14 @@ public class SecurityConfiguration {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:4200", "https://example.com")); // Chỉ định domain được phép
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")); // Chỉ định các phương thức HTTP
-        configuration.setAllowedHeaders(List.of("*")); // Chấp nhận tất cả các headers
-        configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition")); // Headers có thể đọc từ client
-        configuration.setAllowCredentials(true); // Cho phép gửi cookie, token
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:4200",
+                "https://smart-hr-zeta.vercel.app"
+        ));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

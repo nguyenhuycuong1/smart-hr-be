@@ -21,9 +21,15 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
     @Query("SELECT lr FROM LeaveRequest lr WHERE lr.employeeCode = :employeeCode AND lr.status = 'PHEDUYET' AND YEAR(lr.startDate) = :year")
     List<LeaveRequest> findApprovedLeaveRequestsByEmployeeCodeAndYear(@Param("employeeCode") String employeeCode, @Param("year") int year);
 
+    @Query("SELECT lr FROM LeaveRequest lr WHERE lr.employeeCode = :employeeCode AND (lr.status = 'DANGCHO' OR lr.status = 'PHEDUYET') AND YEAR(lr.startDate) = :year")
+    List<LeaveRequest> findPendingAndApprovedLeaveRequestsByEmployeeCodeAndYear(@Param("employeeCode") String employeeCode, @Param("year") int year);
+
     @Query("SELECT lr FROM LeaveRequest lr WHERE lr.status = 'PHEDUYET' AND YEAR(lr.startDate) = :year")
     List<LeaveRequest> findApprovedLeaveRequestsByYear(int year);
 
     @Query("SELECT lr FROM LeaveRequest lr WHERE YEAR(lr.startDate) = :year")
     List<LeaveRequest> findAllByYear(int year);
+
+    @Query("SELECT lr FROM LeaveRequest lr WHERE lr.status = :status AND lr.endDate <= :date")
+    List<LeaveRequest> findByStatusAndEndDateBeforeOrEqual(@Param("status") ApprovalStatus status, @Param("date") LocalDate date);
 }

@@ -99,6 +99,9 @@ public class RecruitmentRequestService extends SearchService<RecruitmentRequest>
         RecruitmentRequest recruitmentRequest = new RecruitmentRequest();
         recruitmentRequest.setRecruitmentRequestCode("TEMP");
         recruitmentRequest.setDepartmentCode(recruitmentRequestDTO.getDepartmentCode());
+        if(recruitmentRequestDTO.getJobCode() == null || recruitmentRequestDTO.getJobCode().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Vị trí công việc không được để trống");
+        }
         recruitmentRequest.setJobCode(recruitmentRequestDTO.getJobCode());
         if(recruitmentRequestDTO.getQuantity() < 1 ) {
             throw new AppException(ErrorCode.UNCATEGORIZED, "Số lượng không hợp lệ");
@@ -123,6 +126,9 @@ public class RecruitmentRequestService extends SearchService<RecruitmentRequest>
             throw new AppException(ErrorCode.UNCATEGORIZED, "Recruitment Request not found");
         }
         recruitmentRequest.setDepartmentCode(recruitmentRequestDTO.getDepartmentCode());
+        if(recruitmentRequestDTO.getJobCode() == null || recruitmentRequestDTO.getJobCode().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Vị trí công việc không được để trống");
+        }
         recruitmentRequest.setJobCode(recruitmentRequestDTO.getJobCode());
         if(recruitmentRequestDTO.getQuantity() < 1 ) {
             throw new AppException(ErrorCode.UNCATEGORIZED, "Số lượng không hợp lệ");

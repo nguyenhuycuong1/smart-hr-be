@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -94,7 +95,18 @@ public class LeaveRequestService extends SearchService<LeaveRequest> {
     }
 
     public LeaveRequest createLeaveRequest(LeaveRequestDTO leaveRequestDTO) {
+        if (leaveRequestDTO.getEmployeeCode() == null ) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Mã nhân viên không được để trống");
+        }
+        if (leaveRequestDTO.getLeaveTypeId() == null || leaveRequestDTO.getLeaveTypeId() <= 0) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Loại phép không được để trống");
+        }
+        if(leaveRequestDTO.getReason() == null || leaveRequestDTO.getReason().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Lý do xin phép không được để trống");
+        }
+
         LeaveRequest leaveRequest = new LeaveRequest();
+        checkValidStartDateAndEndDate(leaveRequestDTO.getStartDate(), leaveRequestDTO.getEndDate());
         updateLeaveRequestFromDTO(leaveRequest, leaveRequestDTO);
         leaveRequest.setCreatedAt(LocalDateTime.now());
         leaveRequest.setUpdatedAt(LocalDateTime.now());
@@ -102,8 +114,18 @@ public class LeaveRequestService extends SearchService<LeaveRequest> {
     }
 
     public LeaveRequest updateLeaveRequest(Long id, LeaveRequestDTO leaveRequestDTO) {
+        if (leaveRequestDTO.getEmployeeCode() == null ) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Mã nhân viên không được để trống");
+        }
+        if (leaveRequestDTO.getLeaveTypeId() == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Loại phép không được để trống");
+        }
+        if(leaveRequestDTO.getReason() == null || leaveRequestDTO.getReason().isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Lý do xin phép không được để trống");
+        }
         LeaveRequest leaveRequest = repository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED, "Leave request not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED, "Không tìm thấy yêu cầu xin phép với ID: " + id));
+        checkValidStartDateAndEndDate(leaveRequestDTO.getStartDate(), leaveRequestDTO.getEndDate());
         updateLeaveRequestFromDTO(leaveRequest, leaveRequestDTO);
         leaveRequest.setUpdatedAt(LocalDateTime.now());
         return repository.save(leaveRequest);
@@ -184,7 +206,7 @@ public class LeaveRequestService extends SearchService<LeaveRequest> {
             List<LeaveType> leaveTypes = leaveTypeRepository.findAll();
             
             // Get all approved leave requests for the employee in the current year
-            List<LeaveRequest> leaveRequests = repository.findApprovedLeaveRequestsByEmployeeCodeAndYear(employeeCode, currentYear);
+            List<LeaveRequest> leaveRequests = repository.findPendingAndApprovedLeaveRequestsByEmployeeCodeAndYear(employeeCode, currentYear);
             
             // Calculate used days for each leave type
             Map<Long, Integer> usedDaysMap = new HashMap<>();
@@ -231,4 +253,30 @@ public class LeaveRequestService extends SearchService<LeaveRequest> {
             throw new AppException(ErrorCode.UNCATEGORIZED, "Failed to calculate leave balance: " + e.getMessage());
         }
     }
+
+    /**
+     * Scheduled task to reject pending leave requests whose endDate is before or equal to today
+     */
+    @Scheduled(cron = "0 0 1 * * *") // Runs every day at 1:00 AM
+    public void scheduledUpdateStatusExpiredPendingRequests() {
+        LocalDate today = LocalDate.now();
+        List<LeaveRequest> expiredPendingRequests = repository.findByStatusAndEndDateBeforeOrEqual(ApprovalStatus.DANGCHO, today);
+        for (LeaveRequest request : expiredPendingRequests) {
+            request.setStatus(ApprovalStatus.TUCHOI);
+            request.setApprovedBy("Hệ thống");
+            request.setApprovedAt(LocalDateTime.now());
+            repository.save(request);
+        }
+    }
+
+    private void checkValidStartDateAndEndDate(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày bắt đầu và ngày kết thúc không được để trống");
+        }
+        if (startDate.isAfter(endDate)) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Ngày bắt đầu không được sau ngày kết thúc");
+        }
+    }
+
+
 }

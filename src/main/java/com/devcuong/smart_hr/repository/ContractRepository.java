@@ -20,6 +20,8 @@ public interface ContractRepository extends JpaRepository<Contract, Integer>, Jp
 
     Contract findByEmployeeCodeAndStatus(String employeeCode, ContractStatus status);
 
+
+
     Contract findByContractCode(String contractCode);
 
     @Query("SELECT c FROM Contract c WHERE c.employeeCode = :employeeCode AND c.status = :status")
@@ -36,4 +38,7 @@ public interface ContractRepository extends JpaRepository<Contract, Integer>, Jp
 
     @Query("SELECT c FROM Contract c WHERE (c.status = 'DANGHOATDONG' OR c.status = 'SAPHETHAN') ORDER BY c.startDate DESC")
     List<Contract> findAllContractIsActive();
+
+    @Query("SELECT c FROM Contract c WHERE c.employeeCode = :employeeCode AND (c.status = 'DANGHOATDONG' OR c.status = 'SAPHETHAN')")
+    List<Contract> findByEmployeeCodeAndStatusDangHoatDongOrSapHetHan(@Param("employeeCode") String employeeCode);
 }

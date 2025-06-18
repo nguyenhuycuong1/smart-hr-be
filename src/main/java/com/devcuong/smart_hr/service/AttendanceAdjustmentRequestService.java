@@ -2,13 +2,18 @@ package com.devcuong.smart_hr.service;
 
 import com.devcuong.smart_hr.Entity.AttendanceAdjustmentRequest;
 import com.devcuong.smart_hr.Entity.AttendanceRecord;
+import com.devcuong.smart_hr.Entity.Contract;
+import com.devcuong.smart_hr.Entity.Employee;
 import com.devcuong.smart_hr.dto.AttendanceAdjustmentRequestDTO;
 import com.devcuong.smart_hr.dto.request.PageFilterInput;
 import com.devcuong.smart_hr.enums.ApprovalStatus;
+import com.devcuong.smart_hr.enums.ContractStatus;
 import com.devcuong.smart_hr.exception.AppException;
 import com.devcuong.smart_hr.exception.ErrorCode;
 import com.devcuong.smart_hr.repository.AttendanceAdjustmentRequestRepository;
 import com.devcuong.smart_hr.repository.AttendanceRecordRepository;
+import com.devcuong.smart_hr.repository.ContractRepository;
+import com.devcuong.smart_hr.repository.EmployeeRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -33,6 +38,12 @@ public class AttendanceAdjustmentRequestService extends SearchService<Attendance
     @Autowired
     AttendanceRecordService attendanceRecordService;
 
+    @Autowired
+    EmployeeRepository employeeRepository;
+
+    @Autowired
+    ContractRepository contractRepository;
+
     public AttendanceAdjustmentRequestService(AttendanceAdjustmentRequestRepository repository) {
         super(repository);
     }
@@ -53,6 +64,21 @@ public class AttendanceAdjustmentRequestService extends SearchService<Attendance
     }
 
     public AttendanceAdjustmentRequest createAdjustment(AttendanceAdjustmentRequestDTO adjustmentDTO) {
+        if (adjustmentDTO.getEmployeeCode() == null || adjustmentDTO.getEmployeeCode().isEmpty()) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Mã nhân viên không được để trống");
+        }
+        Employee employee = employeeRepository.findByEmployeeCode(adjustmentDTO.getEmployeeCode());
+        if (employee == null) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Nhân viên không tồn tại");
+        }
+        Contract contract = contractRepository.findByEmployeeCodeAndStatusDangHoatDongOrSapHetHan(adjustmentDTO.getEmployeeCode()).getFirst();
+        if (contract == null) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Nhân viên không có hợp đồng lao động đang hoạt động");
+        }
+        if (contract.getStartDate().isAfter(adjustmentDTO.getWorkDate()) || contract.getEndDate().isBefore(adjustmentDTO.getWorkDate())) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Ngày làm việc không nằm trong khoảng thời gian hợp đồng lao động");
+        }
+
         AttendanceAdjustmentRequest adjustment = new AttendanceAdjustmentRequest();
         updateAdjustmentFromDTO(adjustment, adjustmentDTO);
         adjustment.setCreatedAt(LocalDateTime.now());
@@ -61,6 +87,20 @@ public class AttendanceAdjustmentRequestService extends SearchService<Attendance
     }
 
     public AttendanceAdjustmentRequest updateAdjustment(Long id, AttendanceAdjustmentRequestDTO adjustmentDTO) {
+        if (adjustmentDTO.getEmployeeCode() == null || adjustmentDTO.getEmployeeCode().isEmpty()) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Mã nhân viên không được để trống");
+        }
+        Employee employee = employeeRepository.findByEmployeeCode(adjustmentDTO.getEmployeeCode());
+        if (employee == null) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Nhân viên không tồn tại");
+        }
+        Contract contract = contractRepository.findByEmployeeCodeAndStatusDangHoatDongOrSapHetHan(adjustmentDTO.getEmployeeCode()).getFirst();
+        if (contract == null) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Nhân viên không có hợp đồng lao động đang hoạt động");
+        }
+        if (contract.getStartDate().isAfter(adjustmentDTO.getWorkDate()) || contract.getEndDate().isBefore(adjustmentDTO.getWorkDate())) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Ngày làm việc không nằm trong khoảng thời gian hợp đồng lao động");
+        }
         AttendanceAdjustmentRequest adjustment = repository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED, "Adjustment request not found"));
         updateAdjustmentFromDTO(adjustment, adjustmentDTO);
@@ -99,7 +139,7 @@ public class AttendanceAdjustmentRequestService extends SearchService<Attendance
             attendanceRecord.setCheckOutTime(adjustment.getAdjustedCheckOut());
             AttendanceRecord updatedAttendanceRecord = attendanceRecordService.updateAttendanceRecord(attendanceRecord.getId(), attendanceRecord);
         } else {
-            throw new AppException(ErrorCode.UNCATEGORIZED, "Attendance record not found");
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Không tìm thấy bản ghi chấm công của nhân viên vào ngày này!");
         }
         repository.save(adjustment);
     }
@@ -117,4 +157,5 @@ public class AttendanceAdjustmentRequestService extends SearchService<Attendance
 //        LocalDate now = LocalDate.now();
 //        return workDate.isAfter(now);
 //    }
+
 }

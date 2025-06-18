@@ -1,8 +1,6 @@
 package com.devcuong.smart_hr.service;
 
-import com.devcuong.smart_hr.Entity.Contract;
-import com.devcuong.smart_hr.Entity.Employee;
-import com.devcuong.smart_hr.Entity.WorkSchedule;
+import com.devcuong.smart_hr.Entity.*;
 import com.devcuong.smart_hr.config.MultitenancyProperties;
 import com.devcuong.smart_hr.config.TenantContext;
 import com.devcuong.smart_hr.dto.ContractDTO;
@@ -12,10 +10,9 @@ import com.devcuong.smart_hr.dto.request.PageFilterInput;
 import com.devcuong.smart_hr.enums.ContractStatus;
 import com.devcuong.smart_hr.exception.AppException;
 import com.devcuong.smart_hr.exception.ErrorCode;
-import com.devcuong.smart_hr.repository.ContractRepository;
-import com.devcuong.smart_hr.repository.EmployeeRepository;
-import com.devcuong.smart_hr.repository.WorkScheduleRepository;
+import com.devcuong.smart_hr.repository.*;
 import com.devcuong.smart_hr.utils.CodeUtils;
+import com.devcuong.smart_hr.utils.POIUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -23,6 +20,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,6 +43,11 @@ public class ContractService extends SearchService<Contract> {
 
     @Autowired
     MultitenancyProperties multitenancyProperties;
+
+    @Autowired
+    private DepartmentRepository departmentRepository;
+    @Autowired
+    private JobPositionRepository jobPositionRepository;
 
     public ContractService(ContractRepository repository) {
         super(repository);
@@ -124,6 +127,13 @@ public class ContractService extends SearchService<Contract> {
         if (contractDto.getStatus() == null) {
             throw new AppException(ErrorCode.BAD_REQUEST, "Trạng thái hợp đồng không được bỏ trống!");
         }
+        // Kiểm tra mã nhân viên có tồn tại hay không
+        Employee employee = employeeRepository.findByEmployeeCode(contractDto.getEmployeeCode());
+        if (employee == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST, "Mã nhân viên không tồn tại!");
+        }
+
+        checkValidStartAndEndDate(contractDto.getStartDate(), contractDto.getEndDate());
 
         Contract contract = new Contract();
         contract.setContractCode("TEMP");
@@ -197,6 +207,9 @@ public class ContractService extends SearchService<Contract> {
         if(contract == null) {
             throw new AppException(ErrorCode.UNCATEGORIZED, "Contract not found");
         }
+
+        checkValidStartAndEndDate(contractDto.getStartDate(), contractDto.getEndDate());
+
         contract.setStartDate(contractDto.getStartDate());
         contract.setEndDate(contractDto.getEndDate());
         contract.setContractType(contractDto.getContractType());
@@ -231,28 +244,32 @@ public class ContractService extends SearchService<Contract> {
      * @param status Trạng thái của hợp đồng mới
      */
     private void updateExistingContractsStatus(String employeeCode, String contractCode, ContractStatus status) {
-        if (status == ContractStatus.DANGHOATDONG) {
-            List<Contract> activeContracts = repository.findListByEmployeeCodeAndStatus(employeeCode, ContractStatus.DANGHOATDONG);
-
-            for (Contract existingContract : activeContracts) {
-                // Bỏ qua hợp đồng hiện tại nếu đang cập nhật (không phải tạo mới)
-                if (contractCode != null && contractCode.equals(existingContract.getContractCode())) {
+        if (status == ContractStatus.DANGHOATDONG || status == ContractStatus.SAPHETHAN) {
+            List<Contract> activeContract = repository.findByEmployeeCodeAndStatusDangHoatDongOrSapHetHan(employeeCode);
+            for (Contract contract : activeContract) {
+                if (contract.getContractCode().equals(contractCode)) {
+                    // Nếu hợp đồng hiện tại là hợp đồng đang hoạt động, không cần cập nhật
                     continue;
                 }
-
-                existingContract.setStatus(ContractStatus.DAHUY);
-                repository.save(existingContract);
+                // Cập nhật trạng thái của các hợp đồng đang hoạt động khác thành "Đã hủy"
+                contract.setStatus(ContractStatus.DAHUY);
+                repository.save(contract);
                 log.info("Changed contract {} status from 'Đang hoạt động' to 'Đã hủy'",
-                        existingContract.getContractCode());
+                        contract.getContractCode());
             }
         }
     }
 
     private void updateWorkInfo(Contract contract, String employeeCode) {
         Employee employee = employeeRepository.findByEmployeeCode(employeeCode);
-        if(contract.getStatus() == ContractStatus.DANGHOATDONG) {
+        JobPosition jobPosition = jobPositionRepository.findJobPositionByJobCode(contract.getJobPosition()).orElse(null);
+        if (jobPosition == null) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Không tìm thấy vị trí công việc");
+        }
+        if(contract.getStatus() == ContractStatus.DANGHOATDONG || contract.getStatus() == ContractStatus.SAPHETHAN) {
             employee.setEmployeeType(contract.getContractType());
             employee.setJobCode(contract.getJobPosition());
+            employee.setDepartmentCode(jobPosition.getDepartmentCode());
             employeeRepository.save(employee);
         }
 
@@ -314,5 +331,72 @@ public class ContractService extends SearchService<Contract> {
         return repository.findAllContractIsActive().stream()
                 .map(Contract::getEmployeeCode)
                 .collect(Collectors.toList());
+    }
+
+    private void checkValidStartAndEndDate(LocalDate startDate, LocalDate endDate) {
+        if (startDate.isAfter(endDate)) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Ngày bắt đầu không được sau ngày kết thúc!");
+        }
+    }
+
+    public ByteArrayInputStream exportContractData(PageFilterInput<Contract> input) {
+        String[] headers = {
+            "Mã hợp đồng", "Tên hợp đồng", "Mã nhân viên", "Họ và tên" , "Ngày bắt đầu", "Ngày kết thúc",
+            "Loại hợp đồng", "Lương cơ bản", "Vị trí công việc", "Tần suất thanh toán",
+            "Ca làm việc", "Lịch làm việc", "Hình thức", "Trạng thái", "Ghi chú"
+        };
+        try {
+            List<Contract> contracts = super.findAll(input).getContent();
+
+            if (contracts == null || contracts.isEmpty()) {
+                throw new AppException(ErrorCode.NOT_FOUND, "No contract data found for export");
+            }
+
+            // Convert contracts to data array
+            Object[][] data = new Object[contracts.size()][headers.length];
+
+            for (int i = 0; i < contracts.size(); i++) {
+                Contract contract = contracts.get(i);
+
+                // Get work schedule name
+                String workScheduleName = null;
+                if (contract.getWorkScheduleId() != null) {
+                    WorkSchedule workSchedule = workScheduleRepository.findById(contract.getWorkScheduleId()).orElse(null);
+                    if (workSchedule != null) {
+                        workScheduleName = workSchedule.getScheduleName();
+                    }
+                }
+
+                String employeeName = null;
+                if (contract.getEmployeeCode() != null) {
+                    Employee employee = employeeRepository.findByEmployeeCode(contract.getEmployeeCode());
+                    if (employee != null) {
+                        employeeName = employee.getLastName() + " " + employee.getFirstName();
+                    }
+                }
+
+                // Fill data row
+                data[i][0] = contract.getContractCode();
+                data[i][1] = contract.getContractName();
+                data[i][2] = contract.getEmployeeCode();
+                data[i][3] = employeeName != null ? employeeName : "N/A";
+                data[i][4] = contract.getStartDate();
+                data[i][5] = contract.getEndDate();
+                data[i][6] = contract.getContractType();
+                data[i][7] = contract.getBasicSalary();
+                data[i][8] = contract.getJobPosition();
+                data[i][9] = contract.getPayFrequency();
+                data[i][10] = contract.getShift();
+                data[i][11] = workScheduleName;
+                data[i][12] = contract.getTypeOfWork();
+                data[i][13] = contract.getStatus().toString();
+                data[i][14] = contract.getNote();
+            }
+
+            // Create Excel file with data
+            return POIUtils.createSimpleExcel(headers, data);
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Error exporting contract data: " + e.getMessage());
+        }
     }
 }

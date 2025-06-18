@@ -23,6 +23,8 @@ spring:
         registration:
           oidc:
             client-id: smart_hr
+  jackson:
+    time-zone: Asia/Ho_Chi_Minh
 keycloak:
   auth-server-url: http://localhost:8081
   realm: master

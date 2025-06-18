@@ -15,4 +15,10 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long>, Jpa
     Long countByJobPostCodeAndStatus(String jobPostCode, CandidateStatus status);
 
     List<Candidate> findByJobPostCodeAndCandidateCodeNot(String jobPostCode, String candidateCode);
+
+    Candidate findByEmailAndJobPostCode(String email, String jobPostCode);
+
+    List<Candidate> findByJobPostCode(String jobPostCode);
+
+    void deleteByJobPostCode(String jobPostCode);
 }

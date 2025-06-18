@@ -46,6 +46,11 @@ public class KeycloakController {
         return ApiResponse.builder().data(keycloakService.getUser(userId)).build().success();
     }
 
+    @GetMapping("/users/by-employee-code/{employeeCode}")
+    public ApiResponse getUserByEmployeeCode(@PathVariable String employeeCode) {
+        return ApiResponse.builder().data(keycloakService.getUserByEmployeeCode(employeeCode)).build().success();
+    }
+
     @PostMapping("/users")
     public PageResponse getAllUsers(@RequestBody PageFilterInput<UserRepresentation> input) {
         Page<UserRepresentation> page = keycloakService.getUsers(input);

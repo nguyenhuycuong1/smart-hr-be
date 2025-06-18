@@ -1,11 +1,16 @@
 package com.devcuong.smart_hr.service;
 
+import com.devcuong.smart_hr.Entity.Contract;
+import com.devcuong.smart_hr.Entity.Employee;
 import com.devcuong.smart_hr.Entity.OvertimeRequest;
 import com.devcuong.smart_hr.dto.OvertimeRequestDTO;
 import com.devcuong.smart_hr.dto.request.PageFilterInput;
 import com.devcuong.smart_hr.enums.ApprovalStatus;
+import com.devcuong.smart_hr.enums.ContractStatus;
 import com.devcuong.smart_hr.exception.AppException;
 import com.devcuong.smart_hr.exception.ErrorCode;
+import com.devcuong.smart_hr.repository.ContractRepository;
+import com.devcuong.smart_hr.repository.EmployeeRepository;
 import com.devcuong.smart_hr.repository.OvertimeRequestRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +28,12 @@ public class OvertimeRequestService extends SearchService<OvertimeRequest> {
 
     @Autowired
     OvertimeRequestRepository repository;
+
+    @Autowired
+    EmployeeRepository employeeRepository;
+
+    @Autowired
+    ContractRepository contractRepository;
 
     public OvertimeRequestService(OvertimeRequestRepository repository) {
         super(repository);
@@ -44,6 +55,18 @@ public class OvertimeRequestService extends SearchService<OvertimeRequest> {
     }
 
     public OvertimeRequest createOvertimeRequest(OvertimeRequestDTO overtimeRequestDTO) {
+        if (overtimeRequestDTO.getEmployeeCode() == null || overtimeRequestDTO.getEmployeeCode().isEmpty()) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Mã nhân viên không được để trống");
+        }
+        Employee employee = employeeRepository.findByEmployeeCode(overtimeRequestDTO.getEmployeeCode());
+        if (employee == null) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Nhân viên không tồn tại");
+        }
+        Contract contract = contractRepository.findByEmployeeCodeAndStatusDangHoatDongOrSapHetHan(overtimeRequestDTO.getEmployeeCode()).getFirst();
+        if (contract == null) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Nhân viên không có hợp đồng lao động đang hoạt động");
+        }
+
         OvertimeRequest overtimeRequest = new OvertimeRequest();
         updateOvertimeRequestFromDTO(overtimeRequest, overtimeRequestDTO);
         overtimeRequest.setCreatedAt(LocalDateTime.now());
@@ -52,6 +75,17 @@ public class OvertimeRequestService extends SearchService<OvertimeRequest> {
     }
 
     public OvertimeRequest updateOvertimeRequest(Long id, OvertimeRequestDTO overtimeRequestDTO) {
+        if (overtimeRequestDTO.getEmployeeCode() == null || overtimeRequestDTO.getEmployeeCode().isEmpty()) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Mã nhân viên không được để trống");
+        }
+        Employee employee = employeeRepository.findByEmployeeCode(overtimeRequestDTO.getEmployeeCode());
+        if (employee == null) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Nhân viên không tồn tại");
+        }
+        Contract contract = contractRepository.findByEmployeeCodeAndStatusDangHoatDongOrSapHetHan(overtimeRequestDTO.getEmployeeCode()).getFirst();
+        if (contract == null) {
+            throw new AppException(ErrorCode.UNCATEGORIZED, "Nhân viên không có hợp đồng lao động đang hoạt động");
+        }
         OvertimeRequest overtimeRequest = repository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED, "Overtime request not found"));
         updateOvertimeRequestFromDTO(overtimeRequest, overtimeRequestDTO);

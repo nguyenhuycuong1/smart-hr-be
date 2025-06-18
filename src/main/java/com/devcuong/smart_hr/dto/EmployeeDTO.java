@@ -77,6 +77,13 @@ public class EmployeeDTO {
     String maritalStatus;
     @Column(name = "note")
     String note;
+    @Column(name = "is_active")
+    @JsonProperty("is_active")
+    Boolean isActive = true;
+    @JsonProperty("has_account")
+    @Column(name = "has_account")
+    Boolean hasAccount = false;
+
 
     public static EmployeeDTO toDTO(Employee employee) {
         EmployeeDTO employeeDTO = new EmployeeDTO();
@@ -102,6 +109,8 @@ public class EmployeeDTO {
         employeeDTO.identificationNumber = employee.getIdentificationNumber();
         employeeDTO.maritalStatus = employee.getMaritalStatus();
         employeeDTO.note = employee.getNote();
+        employeeDTO.isActive = employee.getIsActive();
+        employeeDTO.hasAccount = employee.getHasAccount();
         return employeeDTO;
     }
 }

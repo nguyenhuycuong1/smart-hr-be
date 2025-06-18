@@ -31,6 +31,19 @@ public class InterviewSessionService {
 
     @Transactional
     public void createInterviewSession(InterviewScheduleDTO interviewScheduleDTO) {
+        if(interviewScheduleDTO.getJobPostCode() == null || interviewScheduleDTO.getJobPostCode().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Mã bài đăng tuyển dụng không được bỏ trống");
+        }
+        if(interviewScheduleDTO.getStartTime() == null || interviewScheduleDTO.getEndTime() == null) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Thời gian bắt đầu và kết thúc không được bỏ trống");
+        }
+        if (interviewScheduleDTO.getCandidateCodes() == null || interviewScheduleDTO.getCandidateCodes().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Mã ứng viên tham gia phỏng vấn không được bỏ trống");
+        }
+        if (interviewScheduleDTO.getRecruiterCodes() == null || interviewScheduleDTO.getRecruiterCodes().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Mã nhân viên phụ trách phỏng vấn không được bỏ trống");
+        }
+        checkValidStartTimeAndEndTime(interviewScheduleDTO.getStartTime(), interviewScheduleDTO.getEndTime());
         InterviewSession interviewSession = new InterviewSession();
         interviewSession.setTitle(interviewScheduleDTO.getTitle());
         interviewSession.setJobPostCode(interviewScheduleDTO.getJobPostCode());
@@ -142,10 +155,23 @@ public class InterviewSessionService {
 
     @Transactional
     public void updateInterviewSession(InterviewScheduleDTO interviewScheduleDTO) {
+        if(interviewScheduleDTO.getJobPostCode() == null || interviewScheduleDTO.getJobPostCode().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Mã bài đăng tuyển dụng không được bỏ trống");
+        }
+        if(interviewScheduleDTO.getStartTime() == null || interviewScheduleDTO.getEndTime() == null) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Thời gian bắt đầu và kết thúc không được bỏ trống");
+        }
+        if (interviewScheduleDTO.getCandidateCodes() == null || interviewScheduleDTO.getCandidateCodes().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Mã ứng viên tham gia phỏng vấn không được bỏ trống");
+        }
+        if (interviewScheduleDTO.getRecruiterCodes() == null || interviewScheduleDTO.getRecruiterCodes().isEmpty()) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Mã nhân viên phụ trách phỏng vấn không được bỏ trống");
+        }
         InterviewSession interviewSession = getInterviewSession(interviewScheduleDTO.getId());
         if (interviewSession == null) {
             throw new AppException(ErrorCode.INPUT_INVALID, "Không tìm thấy lịch phỏng vấn!");
         }
+        checkValidStartTimeAndEndTime(interviewScheduleDTO.getStartTime(), interviewScheduleDTO.getEndTime());
         interviewSession.setTitle(interviewScheduleDTO.getTitle());
         interviewSession.setJobPostCode(interviewScheduleDTO.getJobPostCode());
         interviewSession.setDescription(interviewScheduleDTO.getDescription());
@@ -184,6 +210,12 @@ public class InterviewSessionService {
         interviewSessionRepository.delete(interviewSession);
         interviewCandidateRepository.deleteAllByInterviewSessionId(id);
         interviewRecruiterRepository.deleteAllByInterviewSessionId(id);
+    }
+
+    private void checkValidStartTimeAndEndTime(OffsetDateTime startTime, OffsetDateTime endTime) {
+        if (startTime.isAfter(endTime)) {
+            throw new AppException(ErrorCode.INPUT_INVALID, "Thời gian bắt đầu phải trước thời gian kết thúc");
+        }
     }
 
 }

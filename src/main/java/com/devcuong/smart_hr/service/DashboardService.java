@@ -337,9 +337,7 @@ public class DashboardService {
         List<String> ageRanges = Arrays.asList("18-25", "26-30", "31-35", "36-40", "41-45", "46-50", "51+");
 
         // Get all active employees
-        List<Employee> activeEmployees = employeeRepository.findAll().stream()
-                .filter(employee -> employee.getResignDate() == null)
-                .collect(Collectors.toList());
+        List<Employee> activeEmployees = employeeRepository.findByIsActiveTrue();
 
         // Calculate age distribution
         Map<String, Long> ageDistribution = calculateAgeDistribution(activeEmployees, ageRanges);
@@ -861,8 +859,8 @@ public class DashboardService {
                 .toList();
 
         // Initialize a 2D array to store counts for each day and time slot
-        // 11 time slots (7:00 to 17:00) x 7 days (Monday to Sunday)
-        int[][] countMatrix = new int[12][7];
+        // 11 time slots (7:00 to 19:00) x 7 days (Monday to Sunday)
+        int[][] countMatrix = new int[13][7];
 
         // Count check-ins for each day and time slot
         for (AttendanceRecord record : recordsWithCheckIn) {
@@ -873,7 +871,7 @@ public class DashboardService {
             int hour = record.getCheckInTime().getHour();
 
             // Only count hours between 7:00 and 17:59
-            if (hour >= 7 && hour < 18) {
+            if (hour >= 7 && hour < 19) {
                 int hourIndex = hour - 7;
                 countMatrix[hourIndex][dayIndex]++;
             }
@@ -881,7 +879,7 @@ public class DashboardService {
 
         // Convert the 2D array to the required output format
         List<int[]> result = new ArrayList<>();
-        for (int hourIndex = 0; hourIndex < 12; hourIndex++) {
+        for (int hourIndex = 0; hourIndex < 13; hourIndex++) {
             for (int dayIndex = 0; dayIndex < 7; dayIndex++) {
                 // Include all entries (both zero and non-zero counts) for complete data representation
                 result.add(new int[]{hourIndex, dayIndex, countMatrix[hourIndex][dayIndex]});
@@ -919,8 +917,8 @@ public class DashboardService {
                 .toList();
 
         // Initialize a 2D array to store counts for each day and time slot
-        // 11 time slots (7:00 to 17:00) x 7 days (Monday to Sunday)
-        int[][] countMatrix = new int[12][7];
+        // 11 time slots (7:00 to 19:00) x 7 days (Monday to Sunday)
+        int[][] countMatrix = new int[13][7];
 
         // Count check-outs for each day and time slot
         for (AttendanceRecord record : recordsWithCheckOut) {
@@ -931,7 +929,7 @@ public class DashboardService {
             int hour = record.getCheckOutTime().getHour();
 
             // Only count hours between 7:00 and 17:59
-            if (hour >= 7 && hour < 18) {
+            if (hour >= 7 && hour < 19) {
                 int hourIndex = hour - 7;
                 countMatrix[hourIndex][dayIndex]++;
             }
@@ -939,7 +937,7 @@ public class DashboardService {
 
         // Convert the 2D array to the required output format
         List<int[]> result = new ArrayList<>();
-        for (int hourIndex = 0; hourIndex < 12; hourIndex++) {
+        for (int hourIndex = 0; hourIndex < 13; hourIndex++) {
             for (int dayIndex = 0; dayIndex < 7; dayIndex++) {
                 // Include all entries (both zero and non-zero counts) for complete data representation
                 result.add(new int[]{hourIndex, dayIndex, countMatrix[hourIndex][dayIndex]});
